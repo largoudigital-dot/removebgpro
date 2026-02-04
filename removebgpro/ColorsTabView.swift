@@ -43,21 +43,21 @@ struct ColorsTabView: View {
                 // Schritt 1: 3-Button Navigation
                 HStack(spacing: 0) {
                     ForEach(ColorPickerTab.allCases) { tab in
-                        Button(action: {
-                            hapticFeedback()
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        InteractiveButton(action: {
+                            withAnimation(AppMotion.snappy) {
                                 selectedPicker = tab
                             }
                         }) {
-                            VStack(spacing: 8) {
+                            VStack(spacing: 10) {
                                 Image(systemName: tab.iconName)
-                                    .font(.system(size: 26, weight: .regular))
+                                    .font(.system(size: 24, weight: .regular))
                                     .frame(width: 28, height: 28)
+                                    .foregroundColor(.primary)
                                 
                                 Text(tab.rawValue)
-                                    .font(.system(size: 10, weight: .medium))
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(.primary.opacity(0.8))
                             }
-                            .foregroundColor(.primary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
                         }
@@ -73,7 +73,6 @@ struct ColorsTabView: View {
             HStack(spacing: 12) {
                 ForEach(presetColors, id: \.self) { color in
                     ColorCircle(color: color, isSelected: viewModel.backgroundColor == color && viewModel.gradientColors == nil) {
-                        hapticFeedback()
                         viewModel.saveState()
                         viewModel.backgroundColor = color
                         viewModel.gradientColors = nil
@@ -83,7 +82,9 @@ struct ColorsTabView: View {
                 }
             }
             .padding(.horizontal, 20)
+            .scrollDiscoveryNudge()
         }
+        .fadedEdge(leading: false, trailing: true)
     }
     
     private var gradientsView: some View {
@@ -92,7 +93,6 @@ struct ColorsTabView: View {
                 ForEach(0..<gradients.count, id: \.self) { index in
                     let colors = gradients[index]
                     GradientCircle(colors: colors, isSelected: viewModel.gradientColors == colors) {
-                        hapticFeedback()
                         viewModel.saveState()
                         viewModel.gradientColors = colors
                         viewModel.backgroundColor = nil
@@ -102,13 +102,15 @@ struct ColorsTabView: View {
                 }
             }
             .padding(.horizontal, 20)
+            .scrollDiscoveryNudge()
         }
+        .fadedEdge(leading: false, trailing: true)
     }
     
     private var transparentView: some View {
         VStack(spacing: 16) {
-            Button(action: {
-                hapticFeedback()
+            InteractiveButton(action: {
+                AppHaptics.medium()
                 viewModel.saveState()
                 viewModel.backgroundColor = nil
                 viewModel.gradientColors = nil
@@ -140,7 +142,7 @@ struct ColorsTabView: View {
                     }
                     
                     Text("Transparenter Hintergrund")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.primary)
                 }
                 .padding()
@@ -158,7 +160,7 @@ struct ColorCircle: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        InteractiveButton(action: action) {
             ZStack {
                 Circle()
                     .fill(color)
@@ -167,11 +169,14 @@ struct ColorCircle: View {
                         Circle()
                             .stroke(Color.black.opacity(0.1), lineWidth: 1)
                     )
+                    .scaleEffect(isSelected ? 1.15 : 1.0)
+                    .animation(AppMotion.bouncy, value: isSelected)
                 
                 if isSelected {
                     Circle()
                         .stroke(Color.blue, lineWidth: 3)
-                        .frame(width: 52, height: 52)
+                        .frame(width: 54, height: 54)
+                        .transition(.scale.combined(with: .opacity))
                 }
             }
         }
@@ -184,16 +189,19 @@ struct GradientCircle: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        InteractiveButton(action: action) {
             ZStack {
                 Circle()
                     .fill(LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing))
                     .frame(width: 44, height: 44)
+                    .scaleEffect(isSelected ? 1.15 : 1.0)
+                    .animation(AppMotion.bouncy, value: isSelected)
                 
                 if isSelected {
                     Circle()
                         .stroke(Color.blue, lineWidth: 3)
-                        .frame(width: 52, height: 52)
+                        .frame(width: 54, height: 54)
+                        .transition(.scale.combined(with: .opacity))
                 }
             }
         }

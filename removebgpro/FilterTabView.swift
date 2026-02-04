@@ -19,15 +19,16 @@ struct FilterTabView: View {
                         filter: filter,
                         isSelected: viewModel.selectedFilter == filter,
                         action: {
-                            hapticFeedback()
                             viewModel.applyFilter(filter)
                         }
                     )
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
             .padding(.vertical, 10)
+            .scrollDiscoveryNudge()
         }
+        .fadedEdge(leading: false, trailing: true)
         .frame(height: 90)
     }
 }
@@ -38,8 +39,8 @@ struct FilterButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
+        InteractiveButton(action: action) {
+            VStack(spacing: 8) {
                 // Filter preview circle with gradient or icon
                 ZStack {
                     Circle()
@@ -49,19 +50,22 @@ struct FilterButton: View {
                             Circle()
                                 .stroke(Color.black.opacity(0.1), lineWidth: 1)
                         )
+                        .scaleEffect(isSelected ? 1.15 : 1.0)
+                        .animation(AppMotion.bouncy, value: isSelected)
                     
                     if isSelected {
                         Circle()
                             .stroke(Color.blue, lineWidth: 3)
-                            .frame(width: 52, height: 52)
+                            .frame(width: 54, height: 54)
+                            .transition(.scale.combined(with: .opacity))
                     }
                 }
                 
                 Text(filter.displayName)
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(.primary)
+                    .font(.system(size: 10, weight: isSelected ? .bold : .medium))
+                    .foregroundColor(isSelected ? .blue : .primary.opacity(0.8))
                     .lineLimit(1)
-                    .frame(width: 60)
+                    .frame(width: 70)
             }
         }
     }

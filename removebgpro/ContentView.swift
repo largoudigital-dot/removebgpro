@@ -16,8 +16,12 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(hex: "#1F2937") 
-                    .ignoresSafeArea()
+                LinearGradient(
+                    colors: [Color(hex: "#0F172A"), Color(hex: "#1E293B")], // Dark, deep slate gradient
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
                 
                 VStack(spacing: 30) {
                     VStack(spacing: 8) {
@@ -34,19 +38,27 @@ struct ContentView: View {
                             .foregroundColor(Color(hex: "#9CA3AF"))
                     }
                     
-                    Button(action: {
+                    InteractiveButton(action: {
                         showingImagePicker = true
                     }) {
-                        HStack {
-                            Image(systemName: "photo.on.rectangle")
+                        HStack(spacing: 12) {
+                            Image(systemName: "photo.badge.plus")
+                                .font(.system(size: 20, weight: .semibold))
                             Text("Foto auswählen")
+                                .font(.system(size: 18, weight: .bold))
                         }
-                        .font(.headline)
                         .foregroundColor(.white)
-                        .frame(maxWidth: 300)
-                        .padding(.vertical, 16)
-                        .background(Color(hex: "#3B82F6"))
-                        .cornerRadius(12)
+                        .frame(maxWidth: 280)
+                        .padding(.vertical, 18)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "#3B82F6"), Color(hex: "#2563EB")],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .cornerRadius(20)
+                        .shadow(color: Color(hex: "#3B82F6").opacity(0.4), radius: 10, x: 0, y: 5)
                     }
                 }
             }

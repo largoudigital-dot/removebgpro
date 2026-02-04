@@ -40,22 +40,22 @@ struct TextEditorOverlay: View {
                 ZStack {
                     TextField("", text: $textItem.text, axis: .vertical)
                         .focused($isTextFieldFocused)
-                        .font(.custom(textItem.fontName, size: 36))
+                        .font(.custom(textItem.fontName, size: 22))
                         .foregroundColor(textItem.color)
                         .multilineTextAlignment(mapAlignment(textItem.alignment))
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 12)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
                         .background(
                             Group {
                                 if textItem.backgroundStyle != .none {
-                                    RoundedRectangle(cornerRadius: 16)
+                                    RoundedRectangle(cornerRadius: 12)
                                         .fill(textItem.backgroundColor.opacity(textItem.backgroundStyle == .solid ? 1.0 : 0.6))
                                 }
                             }
                         )
                         .tint(textItem.color)
                 }
-                .padding(.horizontal, 30) // Horizontal margin from screen edges
+                .padding(.horizontal, 60) // Increased margin to make it slimmer
                 
                 Spacer()
                 
@@ -63,19 +63,22 @@ struct TextEditorOverlay: View {
                 VStack(spacing: 12) {
                     // Navigation Bar (Move to bottom)
                     HStack {
-                        Button("Abbrechen") {
+                        InteractiveButton(action: {
                             onCancel()
+                        }) {
+                            Text("Abbrechen")
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Capsule())
                         }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.6))
-                        .clipShape(Capsule())
                         
                         Spacer()
                         
                         HStack(spacing: 8) {
-                            Button(action: {
+                            InteractiveButton(action: {
+                                AppHaptics.light()
                                 toggleAlignment()
                             }) {
                                 Image(systemName: textItem.alignment.iconName)
@@ -86,7 +89,8 @@ struct TextEditorOverlay: View {
                                     .clipShape(Circle())
                             }
                             
-                            Button(action: {
+                            InteractiveButton(action: {
+                                AppHaptics.light()
                                 toggleBackground()
                             }) {
                                 ZStack {
@@ -103,15 +107,18 @@ struct TextEditorOverlay: View {
                         
                         Spacer()
                         
-                        Button("Fertig") {
+                        InteractiveButton(action: {
+                            AppHaptics.medium()
                             onDone()
+                        }) {
+                            Text("Fertig")
+                                .foregroundColor(.white)
+                                .fontWeight(.bold)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Capsule())
                         }
-                        .foregroundColor(.white)
-                        .fontWeight(.bold)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.6))
-                        .clipShape(Capsule())
                     }
                     .padding(.horizontal, 16)
                     
@@ -119,8 +126,11 @@ struct TextEditorOverlay: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 15) {
                             ForEach(TextEditorStyles.fonts) { font in
-                                Button(action: {
-                                    textItem.fontName = font.name
+                                InteractiveButton(action: {
+                                    AppHaptics.light()
+                                    withAnimation(AppMotion.snappy) {
+                                        textItem.fontName = font.name
+                                    }
                                 }) {
                                     Text(font.displayName)
                                         .font(.custom(font.name, size: 16))
@@ -129,6 +139,8 @@ struct TextEditorOverlay: View {
                                         .background(textItem.fontName == font.name ? Color.white : Color.white.opacity(0.15))
                                         .foregroundColor(textItem.fontName == font.name ? .black : .white)
                                         .cornerRadius(20)
+                                        .scaleEffect(textItem.fontName == font.name ? 1.05 : 1.0)
+                                        .animation(AppMotion.bouncy, value: textItem.fontName == font.name)
                                 }
                             }
                         }
@@ -143,39 +155,44 @@ struct TextEditorOverlay: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
                             ForEach(TextEditorStyles.colors, id: \.self) { color in
-                                ZStack {
-                                    if textItem.backgroundStyle != .none {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(color)
-                                            .frame(width: 32, height: 32)
-                                            .overlay(
-                                                Text("A")
-                                                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                                                    .foregroundColor(shouldShowBlackText(on: color) ? .black : .white)
-                                            )
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(Color.white, lineWidth: textItem.backgroundColor == color ? 3 : 0)
-                                            )
-                                    } else {
-                                        Circle()
-                                            .fill(color)
-                                            .frame(width: 32, height: 32)
-                                            .overlay(
-                                                Circle()
-                                                    .stroke(Color.white, lineWidth: textItem.color == color ? 3 : 0)
-                                            )
+                                InteractiveButton(action: {
+                                    AppHaptics.light()
+                                    withAnimation(AppMotion.bouncy) {
+                                        if textItem.backgroundStyle != .none {
+                                            textItem.backgroundColor = color
+                                            textItem.color = shouldShowBlackText(on: color) ? .black : .white
+                                        } else {
+                                            textItem.color = color
+                                        }
                                     }
-                                }
-                                .contentShape(Rectangle()) // Better hit testing
-                                .shadow(color: .black.opacity(0.2), radius: 2)
-                                .onTapGesture {
-                                    if textItem.backgroundStyle != .none {
-                                        textItem.backgroundColor = color
-                                        textItem.color = shouldShowBlackText(on: color) ? .black : .white
-                                    } else {
-                                        textItem.color = color
+                                }) {
+                                    ZStack {
+                                        if textItem.backgroundStyle != .none {
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(color)
+                                                .frame(width: 32, height: 32)
+                                                .overlay(
+                                                    Text("A")
+                                                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                                                        .foregroundColor(shouldShowBlackText(on: color) ? .black : .white)
+                                                )
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .stroke(Color.white, lineWidth: textItem.backgroundColor == color ? 3 : 0)
+                                                )
+                                                .scaleEffect(textItem.backgroundColor == color ? 1.2 : 1.0)
+                                        } else {
+                                            Circle()
+                                                .fill(color)
+                                                .frame(width: 32, height: 32)
+                                                .overlay(
+                                                    Circle()
+                                                        .stroke(Color.white, lineWidth: textItem.color == color ? 3 : 0)
+                                                )
+                                                .scaleEffect(textItem.color == color ? 1.2 : 1.0)
+                                        }
                                     }
+                                    .animation(AppMotion.bouncy, value: textItem.backgroundStyle != .none ? textItem.backgroundColor : textItem.color)
                                 }
                             }
                             

@@ -9,12 +9,12 @@ import SwiftUI
 import Combine
 
 enum EditorTab: String, CaseIterable, Identifiable {
+    case shadow = "Schatten"
+    case unsplash = "Fotos"
     case crop = "Schnitt"
     case filter = "Filter"
     case colors = "Farben"
     case adjust = "Anpassen"
-    case shadow = "Schatten"
-    case unsplash = "Fotos"
     
     var id: String { rawValue }
     
@@ -103,19 +103,19 @@ struct EditorView: View {
                                 viewModel.addTextItem(updated)
                             }
                         }
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(AppMotion.snappy) {
                             viewModel.showingTextEditor = false
                         }
                         tempTextItem = nil
                     },
                     onCancel: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(AppMotion.snappy) {
                             viewModel.showingTextEditor = false
                         }
                         tempTextItem = nil
                     }
                 )
-                .transition(.opacity)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(2000)
             }
         }
@@ -151,8 +151,9 @@ struct EditorView: View {
             if let tab = selectedTab {
                 // Detail Bar
                 HStack(spacing: 0) {
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                    // Separated Back Button
+                    InteractiveButton(haptic: false, action: {
+                        withAnimation(AppMotion.snappy) {
                             if let _ = selectedAdjustmentParameter {
                                 selectedAdjustmentParameter = nil
                             } else if let _ = selectedColorPicker {
@@ -167,11 +168,18 @@ struct EditorView: View {
                             }
                         }
                     }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.primary)
-                            .frame(width: 50, height: 90)
-                            .background(Color.white)
+                        HStack(spacing: 0) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.primary)
+                                .frame(width: 50, height: 90)
+                            
+                            Divider()
+                                .frame(height: 30)
+                                .background(Color.primary.opacity(0.1))
+                        }
+                        .background(Color.white.opacity(0.4))
+                        .background(.ultraThinMaterial)
                     }
                     
                     tabContent(for: tab)
@@ -192,24 +200,23 @@ struct EditorView: View {
     private var navigationBar: some View {
         ZStack {
             HStack {
-                Button(action: {
-                    hapticFeedback()
+                InteractiveButton(action: {
                     if viewModel.hasChanges {
+                        AppHaptics.medium()
                         showingExitAlert = true
                     } else {
                         dismiss()
                     }
                 }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.system(size: 17, weight: .bold))
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
                 }
                 
                 Spacer()
                 
-                Button(action: {
-                    hapticFeedback()
+                InteractiveButton(action: {
                     viewModel.shareImage()
                 }) {
                     Image(systemName: "square.and.arrow.up")
@@ -219,21 +226,21 @@ struct EditorView: View {
                 }
                 
                 Menu {
-                    Button(action: {
-                        hapticFeedback()
+                    InteractiveButton(haptic: false, action: {
                         viewModel.saveToGallery(format: .png) { success, message in
                             saveMessage = message
                             showingSaveAlert = true
+                            if success { AppHaptics.success() }
                         }
                     }) {
                         Label("Als PNG speichern\(viewModel.isBackgroundTransparent ? " (Empfohlen)" : "")", systemImage: "doc.richtext")
                     }
                     
-                    Button(action: {
-                        hapticFeedback()
+                    InteractiveButton(haptic: false, action: {
                         viewModel.saveToGallery(format: .jpg) { success, message in
                             saveMessage = message
                             showingSaveAlert = true
+                            if success { AppHaptics.success() }
                         }
                     }) {
                         Label("Als JPG speichern\(!viewModel.isBackgroundTransparent ? " (Empfohlen)" : "")", systemImage: "photo")
@@ -325,7 +332,7 @@ struct EditorView: View {
                             },
                             onEditText: { item in
                                 tempTextItem = item
-                                withAnimation(.easeInOut(duration: 0.2)) {
+                                withAnimation(AppMotion.snappy) {
                                     viewModel.showingTextEditor = true
                                 }
                             },
@@ -383,9 +390,8 @@ struct EditorView: View {
         HStack(spacing: 8) {
             // History Group
             HStack(spacing: 0) {
-                Button(action: {
-                    hapticFeedback()
-                    withAnimation { viewModel.undo() }
+                InteractiveButton(action: {
+                    viewModel.undo()
                 }) {
                     Image(systemName: "arrow.uturn.backward")
                         .font(.system(size: 16, weight: .bold))
@@ -398,9 +404,8 @@ struct EditorView: View {
                     .frame(height: 20)
                     .background(Color.primary.opacity(0.2))
                 
-                Button(action: {
-                    hapticFeedback()
-                    withAnimation { viewModel.redo() }
+                InteractiveButton(action: {
+                    viewModel.redo()
                 }) {
                     Image(systemName: "arrow.uturn.forward")
                         .font(.system(size: 16, weight: .bold))
@@ -416,8 +421,7 @@ struct EditorView: View {
             
             // Rotation Group
             HStack(spacing: 0) {
-                Button(action: {
-                    hapticFeedback()
+                InteractiveButton(action: {
                     viewModel.rotateLeft()
                 }) {
                     Image(systemName: "rotate.left")
@@ -430,8 +434,7 @@ struct EditorView: View {
                     .frame(height: 20)
                     .background(Color.primary.opacity(0.2))
                 
-                Button(action: {
-                    hapticFeedback()
+                InteractiveButton(action: {
                     viewModel.rotateRight()
                 }) {
                     Image(systemName: "rotate.right")
@@ -464,14 +467,14 @@ struct EditorView: View {
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
                     if !isShowingOriginal {
-                        hapticFeedback()
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        AppHaptics.medium()
+                        withAnimation(AppMotion.snappy) {
                             isShowingOriginal = true
                         }
                     }
                 }
                 .onEnded { _ in
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(AppMotion.snappy) {
                         isShowingOriginal = false
                     }
                 }
@@ -479,10 +482,9 @@ struct EditorView: View {
     }
     
     private var textButton: some View {
-        Button(action: {
-            hapticFeedback()
+        InteractiveButton(action: {
             tempTextItem = TextItem()
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(AppMotion.snappy) {
                 viewModel.showingTextEditor = true
             }
         }) {
@@ -498,8 +500,7 @@ struct EditorView: View {
     }
     
     private var stickerButton: some View {
-        Button(action: {
-            hapticFeedback()
+        InteractiveButton(action: {
             viewModel.showingEmojiPicker = true
         }) {
             Image(systemName: "face.smiling")
@@ -514,26 +515,31 @@ struct EditorView: View {
     }
     
     private var tabBar: some View {
-        HStack(spacing: 0) {
-            ForEach(EditorTab.allCases) { tab in
-                TabButton(
-                    tab: tab,
-                    isSelected: selectedTab == tab,
-                    isActive: isTabActive(tab),
-                    action: {
-                        hapticFeedback()
-                        viewModel.cancelCropping() // Reset crop mode on tab change
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            if tab == .unsplash {
-                                showingUnsplashPicker = true
-                            } else {
-                                selectedTab = tab
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 0) {
+                ForEach(EditorTab.allCases) { tab in
+                    TabButton(
+                        tab: tab,
+                        isSelected: selectedTab == tab,
+                        isActive: isTabActive(tab),
+                        action: {
+                            viewModel.cancelCropping() // Reset crop mode on tab change
+                            withAnimation(AppMotion.snappy) {
+                                if tab == .unsplash {
+                                    showingUnsplashPicker = true
+                                } else {
+                                    selectedTab = tab
+                                }
                             }
                         }
-                    }
-                )
+                    )
+                    .frame(width: UIScreen.main.bounds.width / 5) // Ensure 5 units fit or slightly less for peeking
+                }
             }
+            .padding(.horizontal, 10)
+            .scrollDiscoveryNudge()
         }
+        .fadedEdge(leading: false, trailing: true)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
@@ -580,12 +586,14 @@ struct TabButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        InteractiveButton(action: action) {
             VStack(spacing: 4) {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: tab.iconName)
-                        .font(.system(size: 26, weight: .regular))
+                        .font(.system(size: isSelected ? 24 : 22, weight: isSelected ? .semibold : .regular))
                         .frame(width: 28, height: 28)
+                        .scaleEffect(isSelected ? 1.1 : 1.0)
+                        .animation(AppMotion.bouncy, value: isSelected)
                     
                     if isActive {
                         Circle()
@@ -596,7 +604,7 @@ struct TabButton: View {
                 }
                 
                 Text(tab.rawValue)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 10, weight: isSelected ? .bold : .medium))
             }
             .foregroundColor(isSelected ? .blue : .primary.opacity(0.6))
             .frame(maxWidth: .infinity)

@@ -50,8 +50,8 @@ struct AdjustmentTabView: View {
                     .frame(maxWidth: .infinity)
                     
                     // Reset Button (stays visible)
-                    Button(action: {
-                        hapticFeedback()
+                    InteractiveButton(action: {
+                        AppHaptics.medium()
                         viewModel.resetAdjustments()
                     }) {
                         VStack(spacing: 4) {
@@ -63,18 +63,18 @@ struct AdjustmentTabView: View {
                                 .foregroundColor(.primary)
                         }
                         .frame(width: 44, height: 90)
+                        .background(Color.black.opacity(0.001))
                     }
                 }
                 .padding(.horizontal, 16)
-                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+                .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
             } else {
                 // Main Tool List View
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(AdjustmentParameter.allCases) { parameter in
-                            Button(action: {
-                                hapticFeedback()
-                                withAnimation(.easeInOut(duration: 0.2)) {
+                            InteractiveButton(action: {
+                                withAnimation(AppMotion.snappy) {
                                     selectedParameter = parameter
                                 }
                             }) {
@@ -85,17 +85,17 @@ struct AdjustmentTabView: View {
                                     
                                     Text(parameter.rawValue)
                                         .font(.system(size: 10, weight: .medium))
-                                        .foregroundColor(.primary)
+                                        .foregroundColor(.primary.opacity(0.8))
                                 }
                                 .frame(width: 70, height: 70)
-                                .background(Color.black.opacity(0.05))
-                                .cornerRadius(12)
+                                .background(Color.primary.opacity(0.05))
+                                .cornerRadius(16)
                             }
                         }
                         
                         // Main Reset Button
-                        Button(action: {
-                            hapticFeedback()
+                        InteractiveButton(action: {
+                            AppHaptics.medium()
                             viewModel.resetAdjustments()
                         }) {
                             VStack(spacing: 8) {
@@ -104,17 +104,19 @@ struct AdjustmentTabView: View {
                                     .foregroundColor(.primary)
                                 Text("Reset")
                                     .font(.system(size: 10, weight: .medium))
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(.primary.opacity(0.8))
                             }
                             .frame(width: 70, height: 70)
-                            .background(Color.black.opacity(0.05))
-                            .cornerRadius(12)
+                            .background(Color.primary.opacity(0.05))
+                            .cornerRadius(16)
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 20)
                     .padding(.vertical, 10)
+                    .scrollDiscoveryNudge()
                 }
-                .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .trailing)))
+                .fadedEdge(leading: false, trailing: true)
+                .transition(.asymmetric(insertion: .move(edge: .leading).combined(with: .opacity), removal: .move(edge: .trailing).combined(with: .opacity)))
             }
         }
         .frame(height: 90)

@@ -100,7 +100,7 @@ struct ZoomableImageView: View {
                     Color.black.opacity(0.001)
                         .onTapGesture {
                             print("DEBUG: Deselection area touched")
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                            withAnimation(AppMotion.snappy) {
                                 selectedStickerId = nil
                                 selectedTextId = nil
                             }
@@ -111,7 +111,7 @@ struct ZoomableImageView: View {
                 if selectedTextId != nil {
                     Color.black.opacity(0.001)
                         .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                            withAnimation(AppMotion.snappy) {
                                 selectedTextId = nil
                                 selectedStickerId = nil
                             }
@@ -219,7 +219,7 @@ struct ZoomableImageView: View {
                             containerSize: geometry.size,
                             isSelected: selectedStickerId == sticker.id,
                             onSelect: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
+                                withAnimation(AppMotion.snappy) {
                                     selectedTextId = nil
                                     selectedStickerId = sticker.id
                                 }
@@ -291,7 +291,7 @@ struct ZoomableImageView: View {
                                 
                                 let wasV = showVGuide
                                 let wasH = showHGuide
-                                if (newShowV && !wasV) || (newShowH && !wasH) { hapticFeedback() }
+                                if (newShowV && !wasV) || (newShowH && !wasH) { AppHaptics.selection() }
                                
                                 DispatchQueue.main.async {
                                     if showVGuide != newShowV { showVGuide = newShowV }
@@ -309,7 +309,7 @@ struct ZoomableImageView: View {
                                               height: screenDyRatio * (geometry.size.height * totalScale))
                             },
                             onDragEnd: {
-                                withAnimation(.easeOut(duration: 0.3)) {
+                                withAnimation(AppMotion.snappy) {
                                     showVGuide = false; showHGuide = false
                                     activeSnapX = nil; activeSnapY = nil
                                 }
@@ -346,7 +346,7 @@ struct ZoomableImageView: View {
                         containerSize: geometry.size,
                         isSelected: selectedTextId == item.id,
                         onSelect: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                            withAnimation(AppMotion.snappy) {
                                 selectedStickerId = nil
                                 selectedTextId = item.id
                             }
@@ -455,7 +455,7 @@ struct ZoomableImageView: View {
                             let wasH = showHGuide
                             
                             if (newShowV && !wasV) || (newShowH && !wasH) {
-                                hapticFeedback()
+                                AppHaptics.selection()
                             }
                            
                             DispatchQueue.main.async {
@@ -478,7 +478,7 @@ struct ZoomableImageView: View {
                             return CGSize(width: finalTranslationX, height: finalTranslationY)
                         },
                         onDragEnd: {
-                            withAnimation(.easeOut(duration: 0.3)) {
+                            withAnimation(AppMotion.snappy) {
                                 showVGuide = false
                                 showHGuide = false
                                 activeSnapX = nil
@@ -532,26 +532,26 @@ struct ZoomableImageView: View {
         
         let drag = DragGesture(minimumDistance: 0)
             .onChanged { value in
-                if interactingLayer == nil {
-                    print("DEBUG: Photo Drag Start on \(targetLayer)")
-                    interactingLayer = targetLayer
-                    hapticFeedback()
-                    
-                    // Deselect stickers and text when starting to interact with any image layer
-                    if selectedStickerId != nil || selectedTextId != nil {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedStickerId = nil
-                            selectedTextId = nil
+                    if interactingLayer == nil {
+                        print("DEBUG: Photo Drag Start on \(targetLayer)")
+                        interactingLayer = targetLayer
+                        AppHaptics.light()
+                        
+                        // Deselect stickers and text when starting to interact with any image layer
+                        if selectedStickerId != nil || selectedTextId != nil {
+                            withAnimation(AppMotion.snappy) {
+                                selectedStickerId = nil
+                                selectedTextId = nil
+                            }
                         }
                     }
-                }
                 updatePosition(for: targetLayer, translation: value.translation, containerSize: containerSize)
             }
             .onEnded { _ in
                 print("DEBUG: Photo Drag End on \(targetLayer)")
                 finalizeOffset(for: targetLayer)
                 interactingLayer = nil
-                withAnimation(.easeOut(duration: 0.2)) {
+                withAnimation(AppMotion.snappy) {
                     showVGuide = false
                     showHGuide = false
                 }
@@ -568,7 +568,7 @@ struct ZoomableImageView: View {
                 if interactingLayer == nil {
                     print("DEBUG: Photo Zoom Start on \(targetLayer)")
                     interactingLayer = targetLayer
-                    hapticFeedback()
+                    AppHaptics.light()
                 }
                 updateScale(for: targetLayer, value: value)
             }
@@ -704,7 +704,7 @@ struct ZoomableImageView: View {
             
             let wasV = showVGuide
             let wasH = showHGuide
-            if (newShowV && !wasV) || (newShowH && !wasH) { hapticFeedback() }
+            if (newShowV && !wasV) || (newShowH && !wasH) { AppHaptics.selection() }
             
             // Update UI State on Main Thread if needed, or directly since we are in a closure?
             // Drag onChanged is usually on main thread.
@@ -764,7 +764,7 @@ struct ZoomableImageView: View {
             showVGuide = false
             showHGuide = false
         }
-        hapticFeedback()
+        AppHaptics.medium()
     }
     
     // Helper to calculate the current transformation state of the photo content
@@ -1082,22 +1082,22 @@ struct TextItemOverlayView: View {
         ZStack {
             ZStack {
                 Text(item.text)
-                    .font(.custom(item.fontName, size: 40))
+                    .font(.custom(item.fontName, size: 22))
                     .foregroundColor(item.color)
                     .multilineTextAlignment(mapAlignment(item.alignment))
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
                     .background(
                         Group {
                             if item.backgroundStyle != .none {
-                                RoundedRectangle(cornerRadius: 16)
+                                RoundedRectangle(cornerRadius: 12)
                                     .fill(item.backgroundColor.opacity(item.backgroundStyle == .solid ? 1.0 : 0.6))
                             }
                         }
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(isSelected && !isEditing ? Color.white : Color.clear, style: StrokeStyle(lineWidth: 3, dash: [8, 4]))
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected && !isEditing ? Color.white : Color.clear, style: StrokeStyle(lineWidth: 2, dash: [5, 3]))
                             .shadow(color: .black.opacity(0.3), radius: 2)
                     )
                     .background(

@@ -21,12 +21,11 @@ struct CropEditorView: View {
             VStack(spacing: 0) {
                 // Top Bar
                 HStack {
-                    Button(action: {
-                        hapticFeedback()
+                    InteractiveButton(action: {
                         onCancel()
                     }) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
                             .padding()
                     }
@@ -39,12 +38,12 @@ struct CropEditorView: View {
                     
                     Spacer()
                     
-                    Button(action: {
-                        hapticFeedback()
+                    InteractiveButton(action: {
+                        AppHaptics.success()
                         onApply(cropRect)
                     }) {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
                             .padding()
                     }
@@ -242,6 +241,9 @@ struct CropEditorView: View {
                 newRect.size.height = min(newRect.height, 1 - newRect.origin.y)
                 
                 self.cropRect = newRect
+            }
+            .onEnded { _ in
+                AppHaptics.light()
             }
     }
 }

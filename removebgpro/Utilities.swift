@@ -7,10 +7,45 @@
 
 import SwiftUI
 
-// MARK: - Haptic Feedback Helper
+// MARK: - Design System Utilities
+
+struct AppHaptics {
+    static func light() {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+    }
+    
+    static func medium() {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+    }
+    
+    static func heavy() {
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.impactOccurred()
+    }
+    
+    static func success() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+    }
+    
+    static func selection() {
+        let generator = UISelectionFeedbackGenerator()
+        generator.selectionChanged()
+    }
+}
+
+struct AppMotion {
+    static let snappy = Animation.spring(response: 0.35, dampingFraction: 0.75, blendDuration: 0)
+    static let bouncy = Animation.spring(response: 0.4, dampingFraction: 0.6, blendDuration: 0)
+    static let interactive = Animation.interactiveSpring(response: 0.3, dampingFraction: 0.8, blendDuration: 0)
+    static let subtle = Animation.easeInOut(duration: 0.25)
+}
+
+// Legacy compatibility
 func hapticFeedback() {
-    let generator = UISelectionFeedbackGenerator()
-    generator.selectionChanged()
+    AppHaptics.selection()
 }
 
 // MARK: - Color Extension
@@ -37,5 +72,48 @@ extension Color {
             blue:  Double(b) / 255,
             opacity: Double(a) / 255
         )
+    }
+}
+
+// MARK: - Scroll Discovery Utilities
+extension View {
+    func fadedEdge(leading: Bool = true, trailing: Bool = true) -> some View {
+        self.mask(
+            HStack(spacing: 0) {
+                if leading {
+                    LinearGradient(gradient: Gradient(colors: [Color.black.opacity(0), Color.black]), startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 24)
+                }
+                
+                Color.black
+                
+                if trailing {
+                    LinearGradient(gradient: Gradient(colors: [Color.black, Color.black.opacity(0)]), startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 24)
+                }
+            }
+        )
+    }
+    
+    func scrollDiscoveryNudge() -> some View {
+        self.modifier(OnAppearNudge())
+    }
+}
+
+struct OnAppearNudge: ViewModifier {
+    @State private var offset: CGFloat = 0
+    
+    func body(content: Content) -> some View {
+        content
+            .offset(x: offset)
+            .onAppear {
+                // Subtle 'peek' animation
+                withAnimation(Animation.spring(response: 0.6, dampingFraction: 0.6).delay(0.5)) {
+                    offset = -20
+                }
+                withAnimation(Animation.spring(response: 0.6, dampingFraction: 0.6).delay(0.9)) {
+                    offset = 0
+                }
+            }
     }
 }

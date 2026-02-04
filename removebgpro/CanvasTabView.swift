@@ -90,14 +90,12 @@ struct CanvasTabView: View {
                             return viewModel.selectedAspectRatio == ratio
                         }()
                         
-                        Button(action: {
-                            hapticFeedback()
-                            
+                        InteractiveButton(action: {
                             if ratio == .custom {
                                 showingCustomSizeDialog = true
                             } else {
                                 viewModel.saveState()
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                withAnimation(AppMotion.snappy) {
                                     viewModel.selectedAspectRatio = ratio
                                     if ratio != .custom {
                                         viewModel.customSize = nil
@@ -112,22 +110,24 @@ struct CanvasTabView: View {
                                 }
                             }
                         }) {
-                            VStack(spacing: 6) {
+                            VStack(spacing: 8) {
                                 AspectRatioIcon(ratio: ratio, isSelected: isActuallySelected)
+                                    .scaleEffect(isActuallySelected ? 1.1 : 1.0)
+                                    .animation(AppMotion.bouncy, value: isActuallySelected)
                                 
                                 if !ratio.displayLabel.isEmpty {
                                     Text(ratio.displayLabel)
-                                        .font(.system(size: 9, weight: .medium))
+                                        .font(.system(size: 10, weight: isActuallySelected ? .bold : .medium))
                                 }
                             }
-                            .foregroundColor(isActuallySelected ? .black : .primary)
-                            .frame(width: 52, height: 60)
-                            .background(isActuallySelected ? Color.white : Color(white: 0.9))
+                            .foregroundColor(isActuallySelected ? .blue : .primary)
+                            .frame(width: 70, height: 75)
+                            .background(isActuallySelected ? Color.blue.opacity(0.1) : Color.primary.opacity(0.05))
+                            .cornerRadius(16)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(isActuallySelected ? Color.blue.opacity(0.2) : Color.clear, lineWidth: 1)
                             )
-                            .cornerRadius(8)
                         }
                     }
                 }

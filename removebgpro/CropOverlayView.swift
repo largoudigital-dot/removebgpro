@@ -89,8 +89,8 @@ struct CropOverlayView: View {
                     .onChanged { value in
                         if dragStartRect == nil {
                             dragStartRect = cropRect
-                            hapticFeedback()
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                            AppHaptics.light()
+                            withAnimation(AppMotion.snappy) {
                                 isDragging = true
                             }
                         }
@@ -101,7 +101,7 @@ struct CropOverlayView: View {
                     .onEnded { _ in
                         commit()
                         dragStartRect = nil
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(AppMotion.snappy) {
                             isDragging = false
                         }
                     }
@@ -172,7 +172,7 @@ struct CropOverlayView: View {
     
     private func commit() {
         onCommit(cropRect)
-        hapticFeedback()
+        AppHaptics.medium()
     }
 }
 
@@ -196,6 +196,7 @@ struct EnhancedCropHandle: View {
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.black)
         }
+        .scaleEffect(1.0) // We could add more here if we had state, but it looks good
     }
     
     var iconName: String {

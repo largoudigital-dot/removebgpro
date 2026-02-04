@@ -48,8 +48,8 @@ struct ShadowTabView: View {
                     .frame(maxWidth: .infinity)
                     
                     // Reset Button
-                    Button(action: {
-                        hapticFeedback()
+                    InteractiveButton(action: {
+                        AppHaptics.medium()
                         resetParameter(parameter)
                     }) {
                         VStack(spacing: 4) {
@@ -61,18 +61,18 @@ struct ShadowTabView: View {
                                 .foregroundColor(.primary)
                         }
                         .frame(width: 44, height: 90)
+                        .background(Color.black.opacity(0.001))
                     }
                 }
                 .padding(.horizontal, 16)
-                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+                .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
             } else {
                 // Main Tool List View
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(ShadowParameter.allCases) { parameter in
-                            Button(action: {
-                                hapticFeedback()
-                                withAnimation(.easeInOut(duration: 0.2)) {
+                            InteractiveButton(action: {
+                                withAnimation(AppMotion.snappy) {
                                     selectedParameter = parameter
                                 }
                             }) {
@@ -83,17 +83,17 @@ struct ShadowTabView: View {
                                     
                                     Text(parameter.rawValue)
                                         .font(.system(size: 10, weight: .medium))
-                                        .foregroundColor(.primary)
+                                        .foregroundColor(.primary.opacity(0.8))
                                 }
                                 .frame(width: 70, height: 70)
-                                .background(Color.black.opacity(0.05))
-                                .cornerRadius(12)
+                                .background(Color.primary.opacity(0.05))
+                                .cornerRadius(16)
                             }
                         }
                         // Glow Preset
-                        Button(action: {
-                            hapticFeedback()
-                            withAnimation(.easeInOut(duration: 0.3)) {
+                        InteractiveButton(action: {
+                            AppHaptics.success()
+                            withAnimation(AppMotion.bouncy) {
                                 viewModel.shadowRadius = 30
                                 viewModel.shadowX = 0
                                 viewModel.shadowY = 0
@@ -105,19 +105,19 @@ struct ShadowTabView: View {
                             VStack(spacing: 8) {
                                 Image(systemName: "sun.max.fill")
                                     .font(.system(size: 22))
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(.blue)
                                 Text("Glow")
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundColor(.primary)
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.blue)
                             }
                             .frame(width: 70, height: 70)
-                            .background(Color.black.opacity(0.05))
-                            .cornerRadius(12)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(16)
                         }
                         
                         // Reset All
-                        Button(action: {
-                            hapticFeedback()
+                        InteractiveButton(action: {
+                            AppHaptics.medium()
                             viewModel.shadowRadius = 0
                             viewModel.shadowX = 0
                             viewModel.shadowY = 0
@@ -131,17 +131,19 @@ struct ShadowTabView: View {
                                     .foregroundColor(.primary)
                                 Text("Alle Reset")
                                     .font(.system(size: 10, weight: .medium))
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(.primary.opacity(0.8))
                             }
                             .frame(width: 70, height: 70)
-                            .background(Color.black.opacity(0.05))
-                            .cornerRadius(12)
+                            .background(Color.primary.opacity(0.05))
+                            .cornerRadius(16)
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 20) // More padding for the nudge
                     .padding(.vertical, 10)
+                    .scrollDiscoveryNudge()
                 }
-                .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .trailing)))
+                .fadedEdge(leading: false, trailing: true) // Lead with trailing fade
+                .transition(.asymmetric(insertion: .move(edge: .leading).combined(with: .opacity), removal: .move(edge: .trailing).combined(with: .opacity)))
             }
         }
         .frame(height: 90)
