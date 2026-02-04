@@ -13,6 +13,7 @@ enum EditorTab: String, CaseIterable, Identifiable {
     case filter = "Filter"
     case colors = "Farben"
     case adjust = "Anpassen"
+    case shadow = "Schatten"
     case unsplash = "Fotos"
     
     var id: String { rawValue }
@@ -23,6 +24,7 @@ enum EditorTab: String, CaseIterable, Identifiable {
         case .filter: return "camera.filters"
         case .colors: return "paintpalette"
         case .adjust: return "slider.horizontal.3"
+        case .shadow: return "drop.fill"
         case .unsplash: return "photo.on.rectangle"
         }
     }
@@ -49,6 +51,7 @@ struct EditorView: View {
     @State private var selectedTab: EditorTab?
     @State private var selectedAdjustmentParameter: AdjustmentParameter? = nil
     @State private var selectedColorPicker: ColorPickerTab? = nil
+    @State private var selectedShadowParameter: ShadowParameter? = nil
     @State private var showingSaveAlert = false
     @State private var saveMessage = ""
     @State private var showingUnsplashPicker = false
@@ -154,6 +157,8 @@ struct EditorView: View {
                                 selectedAdjustmentParameter = nil
                             } else if let _ = selectedColorPicker {
                                 selectedColorPicker = nil
+                            } else if let _ = selectedShadowParameter {
+                                selectedShadowParameter = nil
                             } else {
                                 if selectedTab == .crop {
                                     viewModel.cancelCropping()
@@ -324,9 +329,14 @@ struct EditorView: View {
                                     viewModel.showingTextEditor = true
                                 }
                             },
-                            isEditingText: viewModel.showingTextEditor
+                            isEditingText: viewModel.showingTextEditor,
+                            shadowRadius: viewModel.shadowRadius,
+                            shadowX: viewModel.shadowX,
+                            shadowY: viewModel.shadowY,
+                            shadowColor: viewModel.shadowColor,
+                            shadowOpacity: viewModel.shadowOpacity
                         )
-                        .id("photo-\(viewModel.rotation)-\(viewModel.originalImage?.hashValue ?? 0)")
+                        .id("photo-\(viewModel.rotation)-\(viewModel.originalImage?.hashValue ?? 0)-\(viewModel.shadowRadius)-\(viewModel.shadowX)-\(viewModel.shadowY)-\(viewModel.shadowColor)-\(viewModel.shadowOpacity)")
                     }
                     
                     if viewModel.isRemovingBackground {
@@ -347,7 +357,6 @@ struct EditorView: View {
                 }
                 .frame(width: fitSize.width, height: fitSize.height)
                 .background(Color(white: 0.95))
-                .clipped()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(alignment: .bottom) {
@@ -536,6 +545,7 @@ struct EditorView: View {
         case .filter: return viewModel.isFilterActive
         case .adjust: return viewModel.isAdjustActive
         case .colors: return viewModel.isColorActive
+        case .shadow: return viewModel.isShadowActive
         case .unsplash: return false
         }
     }
@@ -551,6 +561,8 @@ struct EditorView: View {
             AdjustmentTabView(viewModel: viewModel, selectedParameter: $selectedAdjustmentParameter)
         case .colors:
             ColorsTabView(viewModel: viewModel, selectedPicker: $selectedColorPicker)
+        case .shadow:
+            ShadowTabView(viewModel: viewModel, selectedParameter: $selectedShadowParameter)
         case .unsplash:
             EmptyView()
         }

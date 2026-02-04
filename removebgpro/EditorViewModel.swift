@@ -24,6 +24,11 @@ struct EditorState: Equatable {
     var cropRect: CGRect? // Normalized applied crop
     var stickers: [Sticker]
     var textItems: [TextItem]
+    var shadowRadius: CGFloat
+    var shadowX: CGFloat
+    var shadowY: CGFloat
+    var shadowColor: Color
+    var shadowOpacity: Double
     
     static func == (lhs: EditorState, rhs: EditorState) -> Bool {
         return lhs.selectedFilter == rhs.selectedFilter &&
@@ -39,7 +44,12 @@ struct EditorState: Equatable {
             lhs.backgroundImage === rhs.backgroundImage &&
             lhs.cropRect == rhs.cropRect &&
             lhs.stickers == rhs.stickers &&
-            lhs.textItems == rhs.textItems
+            lhs.textItems == rhs.textItems &&
+            lhs.shadowRadius == rhs.shadowRadius &&
+            lhs.shadowX == rhs.shadowX &&
+            lhs.shadowY == rhs.shadowY &&
+            lhs.shadowColor == rhs.shadowColor &&
+            lhs.shadowOpacity == rhs.shadowOpacity
     }
 }
 
@@ -82,6 +92,13 @@ class EditorViewModel: ObservableObject {
     @Published var selectedTextId: UUID? = nil
     @Published var showingTextEditor = false
     
+    // Shadow State
+    @Published var shadowRadius: CGFloat = 0
+    @Published var shadowX: CGFloat = 0
+    @Published var shadowY: CGFloat = 0
+    @Published var shadowColor: Color = .black
+    @Published var shadowOpacity: Double = 0.3
+    
     // Undo/Redo Stacks
     private var undoStack: [EditorState] = []
     private var redoStack: [EditorState] = []
@@ -107,6 +124,10 @@ class EditorViewModel: ObservableObject {
         backgroundColor != nil || gradientColors != nil
     }
     
+    var isShadowActive: Bool {
+        shadowRadius != 0 || shadowX != 0 || shadowY != 0 || shadowOpacity != 0.3 || shadowColor != .black
+    }
+    
     var isBackgroundTransparent: Bool {
         backgroundColor == nil && gradientColors == nil && backgroundImage == nil
     }
@@ -125,7 +146,8 @@ class EditorViewModel: ObservableObject {
                backgroundColor != nil ||
                gradientColors != nil ||
                backgroundImage != nil ||
-               appliedCropRect != nil
+               appliedCropRect != nil ||
+               isShadowActive
     }
     
     private let imageProcessor = ImageProcessor()
@@ -158,7 +180,12 @@ class EditorViewModel: ObservableObject {
             backgroundImage: backgroundImage,
             cropRect: appliedCropRect,
             stickers: stickers,
-            textItems: textItems
+            textItems: textItems,
+            shadowRadius: shadowRadius,
+            shadowX: shadowX,
+            shadowY: shadowY,
+            shadowColor: shadowColor,
+            shadowOpacity: shadowOpacity
         )
     }
     
@@ -219,6 +246,11 @@ class EditorViewModel: ObservableObject {
         appliedCropRect = state.cropRect
         stickers = state.stickers
         textItems = state.textItems
+        shadowRadius = state.shadowRadius
+        shadowX = state.shadowX
+        shadowY = state.shadowY
+        shadowColor = state.shadowColor
+        shadowOpacity = state.shadowOpacity
     }
     
     func setBackgroundImage(_ image: UIImage) {
@@ -421,7 +453,14 @@ class EditorViewModel: ObservableObject {
                 gradientColors: nil,
                 backgroundImage: nil,
                 cropRect: nil,     // No free crop here
-                stickers: []
+                stickers: [],
+                textItems: [],
+                shadowRadius: self.shadowRadius,
+                shadowX: self.shadowX,
+                shadowY: self.shadowY,
+                shadowColor: self.shadowColor,
+                shadowOpacity: self.shadowOpacity,
+                shouldIncludeShadow: false
             )
             
             // 2. Generate CROPPED processed image
@@ -440,7 +479,13 @@ class EditorViewModel: ObservableObject {
                 backgroundImage: nil,
                 cropRect: self.appliedCropRect,
                 stickers: [],
-                textItems: self.textItems // Render text items in preview
+                textItems: self.textItems, // Render text items in preview
+                shadowRadius: self.shadowRadius,
+                shadowX: self.shadowX,
+                shadowY: self.shadowY,
+                shadowColor: self.shadowColor,
+                shadowOpacity: self.shadowOpacity,
+                shouldIncludeShadow: false
             )
             
             DispatchQueue.main.async {
@@ -474,7 +519,12 @@ class EditorViewModel: ObservableObject {
             backgroundImage: self.backgroundImage,
             cropRect: self.appliedCropRect,
             stickers: self.stickers, // Burn them in here
-            textItems: self.textItems // Burn text items in final image
+            textItems: self.textItems, // Burn text items in final image
+            shadowRadius: self.shadowRadius,
+            shadowX: self.shadowX,
+            shadowY: self.shadowY,
+            shadowColor: self.shadowColor,
+            shadowOpacity: self.shadowOpacity
         ) ?? foreground
 
         let data: Data?
@@ -530,7 +580,12 @@ class EditorViewModel: ObservableObject {
             backgroundImage: self.backgroundImage,
             cropRect: self.appliedCropRect,
             stickers: self.stickers,
-            textItems: self.textItems
+            textItems: self.textItems,
+            shadowRadius: self.shadowRadius,
+            shadowX: self.shadowX,
+            shadowY: self.shadowY,
+            shadowColor: self.shadowColor,
+            shadowOpacity: self.shadowOpacity
         ) ?? foreground
         
         // Use PNG if there's transparency, JPG otherwise for sharing

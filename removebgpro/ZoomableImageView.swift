@@ -28,7 +28,14 @@ struct ZoomableImageView: View {
     let onEditText: (TextItem) -> Void
     let isEditingText: Bool
     
-    init(foreground: UIImage?, background: UIImage?, original: UIImage?, backgroundColor: Color?, gradientColors: [Color]?, activeLayer: SelectedLayer, rotation: CGFloat, isCropping: Bool = false, appliedCropRect: CGRect? = nil, onCropCommit: ((CGRect) -> Void)? = nil, stickers: Binding<[Sticker]>, selectedStickerId: Binding<UUID?>, onDeleteSticker: @escaping (UUID) -> Void, textItems: Binding<[TextItem]>, selectedTextId: Binding<UUID?>, onDeleteText: @escaping (UUID) -> Void, onEditText: @escaping (TextItem) -> Void, isEditingText: Bool = false) {
+    // Shadow Properties
+    let shadowRadius: CGFloat
+    let shadowX: CGFloat
+    let shadowY: CGFloat
+    let shadowColor: Color
+    let shadowOpacity: Double
+    
+    init(foreground: UIImage?, background: UIImage?, original: UIImage?, backgroundColor: Color?, gradientColors: [Color]?, activeLayer: SelectedLayer, rotation: CGFloat, isCropping: Bool = false, appliedCropRect: CGRect? = nil, onCropCommit: ((CGRect) -> Void)? = nil, stickers: Binding<[Sticker]>, selectedStickerId: Binding<UUID?>, onDeleteSticker: @escaping (UUID) -> Void, textItems: Binding<[TextItem]>, selectedTextId: Binding<UUID?>, onDeleteText: @escaping (UUID) -> Void, onEditText: @escaping (TextItem) -> Void, isEditingText: Bool = false, shadowRadius: CGFloat = 0, shadowX: CGFloat = 0, shadowY: CGFloat = 0, shadowColor: Color = .black, shadowOpacity: Double = 0.3) {
         self.foreground = foreground
         self.background = background
         self.original = original
@@ -48,6 +55,12 @@ struct ZoomableImageView: View {
         self.onDeleteText = onDeleteText
         self.onEditText = onEditText
         self.isEditingText = isEditingText
+        
+        self.shadowRadius = shadowRadius
+        self.shadowX = shadowX
+        self.shadowY = shadowY
+        self.shadowColor = shadowColor
+        self.shadowOpacity = shadowOpacity
     }
     
     // Foreground State
@@ -140,12 +153,12 @@ struct ZoomableImageView: View {
                     }
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .clipped()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .clipped()
                     .gesture(layerGesture(for: .background, containerSize: geometry.size))
                     
                     // 2. Foreground Layer (Middle)
                     if let displayImage = (foreground ?? original) {
+                        let uiScale = max(geometry.size.width, geometry.size.height) / 1000.0
+                        
                         ZStack {
                             Image(uiImage: displayImage)
                                 .resizable()
@@ -177,6 +190,12 @@ struct ZoomableImageView: View {
                                     Rectangle()
                                 }
                             }
+                        )
+                        .shadow(
+                            color: shadowColor.opacity(max(shadowOpacity, 0.4)), // Ensure it's slightly more visible in preview
+                            radius: shadowRadius * uiScale,
+                            x: shadowX * uiScale,
+                            y: shadowY * uiScale
                         )
                         .scaleEffect(fgScale)
                         .offset(fgOffset)

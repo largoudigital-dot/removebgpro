@@ -270,7 +270,13 @@ class ImageProcessor {
                               backgroundImage: UIImage?,
                               cropRect: CGRect? = nil,
                               stickers: [Sticker] = [],
-                              textItems: [TextItem] = []) -> UIImage? {
+                              textItems: [TextItem] = [],
+                              shadowRadius: CGFloat = 0,
+                              shadowX: CGFloat = 0,
+                              shadowY: CGFloat = 0,
+                              shadowColor: Color = .black,
+                              shadowOpacity: Double = 0.3,
+                              shouldIncludeShadow: Bool = true) -> UIImage? {
         var processedImage = original
         
         // 0. Apply normalized crop rect if provided (Free Crop)
@@ -324,17 +330,23 @@ class ImageProcessor {
                                           blur: blur,
                                           rotation: rotation) ?? processedImage
         
-        if let background = backgroundImage {
-            processedImage = composite(foreground: finalForeground, background: background) ?? finalForeground
-        } else if let colors = gradientColors {
-            if let gradientBg = self.createGradientImage(colors: colors, size: finalForeground.size) {
-                processedImage = composite(foreground: finalForeground, background: gradientBg) ?? finalForeground
-            }
-        } else if let color = backgroundColor {
-            if let colorBg = self.createColorImage(color: color, size: finalForeground.size) {
-                processedImage = composite(foreground: finalForeground, background: colorBg) ?? finalForeground
+        if shouldIncludeShadow {
+            if let background = backgroundImage {
+                processedImage = composite(foreground: finalForeground, background: background, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity) ?? finalForeground
+            } else if let colors = gradientColors {
+                if let gradientBg = self.createGradientImage(colors: colors, size: finalForeground.size) {
+                    processedImage = composite(foreground: finalForeground, background: gradientBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity) ?? finalForeground
+                }
+            } else if let color = backgroundColor {
+                if let colorBg = self.createColorImage(color: color, size: finalForeground.size) {
+                    processedImage = composite(foreground: finalForeground, background: colorBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity) ?? finalForeground
+                }
+            } else {
+                // No background - just use the foreground for now
+                processedImage = finalForeground
             }
         } else {
+            // Skip shadow baking (used for stable live preview)
             processedImage = finalForeground
         }
         
@@ -346,6 +358,14 @@ class ImageProcessor {
         // 5. Render Text Items
         if !textItems.isEmpty {
             processedImage = renderTextItems(textItems, onto: processedImage) ?? processedImage
+        }
+        
+        // 6. Apply shadow to transparent image (No background case)
+        // If there was a background, the shadow was already applied in 'composite'
+        if shouldIncludeShadow && backgroundImage == nil && gradientColors == nil && backgroundColor == nil {
+            if shadowRadius > 0 || shadowX != 0 || shadowY != 0 {
+                processedImage = applyShadowOnly(foreground: processedImage, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity) ?? processedImage
+            }
         }
         
         return processedImage
@@ -468,9 +488,10 @@ class ImageProcessor {
         }
     }
     
-    private func composite(foreground: UIImage, background: UIImage) -> UIImage? {
+    private func composite(foreground: UIImage, background: UIImage, shadowRadius: CGFloat = 0, shadowX: CGFloat = 0, shadowY: CGFloat = 0, shadowColor: Color = .black, shadowOpacity: Double = 0.3) -> UIImage? {
         let size = foreground.size
         UIGraphicsBeginImageContextWithOptions(size, false, foreground.scale)
+        let context = UIGraphicsGetCurrentContext()
         
         // Calculate aspect fill (cover) scale
         let widthRatio = size.width / background.size.width
@@ -489,12 +510,49 @@ class ImageProcessor {
         // Draw background with cover logic
         background.draw(in: bgRect)
         
+        // Apply shadow before drawing foreground
+        if shadowRadius > 0 || shadowX != 0 || shadowY != 0 {
+            let scaleFactor = max(size.width, size.height) / 1000.0
+            let sRadius = shadowRadius * scaleFactor
+            let sX = shadowX * scaleFactor
+            let sY = shadowY * scaleFactor
+            
+            context?.setShadow(offset: CGSize(width: sX, height: sY), blur: sRadius, color: UIColor(shadowColor.opacity(shadowOpacity)).cgColor)
+        }
+        
         // Draw foreground on top
         foreground.draw(in: CGRect(origin: .zero, size: size))
         
         let result = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
         
+        return result
+    }
+    
+    private func applyShadowOnly(foreground: UIImage, shadowRadius: CGFloat, shadowX: CGFloat, shadowY: CGFloat, shadowColor: Color, shadowOpacity: Double) -> UIImage? {
+        let size = foreground.size
+        let scaleFactor = max(size.width, size.height) / 1000.0
+        
+        let sRadius = shadowRadius * scaleFactor
+        let sX = shadowX * scaleFactor
+        let sY = shadowY * scaleFactor
+        
+        // Expand canvas to account for shadow spill and offset
+        let marginX = sRadius * 4 + abs(sX)
+        let marginY = sRadius * 4 + abs(sY)
+        let canvasSize = CGSize(width: size.width + marginX * 2, height: size.height + marginY * 2)
+        
+        UIGraphicsBeginImageContextWithOptions(canvasSize, false, foreground.scale)
+        let context = UIGraphicsGetCurrentContext()
+        
+        context?.setShadow(offset: CGSize(width: sX, height: sY), blur: sRadius, color: UIColor(shadowColor.opacity(shadowOpacity)).cgColor)
+        
+        // Center the foreground in the expanded canvas
+        let drawRect = CGRect(x: marginX, y: marginY, width: size.width, height: size.height)
+        foreground.draw(in: drawRect)
+        
+        let result = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
         return result
     }
     
