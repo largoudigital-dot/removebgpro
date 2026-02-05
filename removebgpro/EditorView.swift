@@ -9,8 +9,8 @@ import SwiftUI
 import Combine
 
 enum EditorTab: String, CaseIterable, Identifiable {
-    case shadow = "Schatten"
     case unsplash = "Hintergrund"
+    case shadow = "Schatten"
     case crop = "Zuschneiden"
     case filter = "Filter"
     case colors = "Farben"
