@@ -346,7 +346,7 @@ struct EditorView: View {
                             shadowColor: viewModel.shadowColor,
                             shadowOpacity: viewModel.shadowOpacity
                         )
-                        .id("photo-\(viewModel.rotation)-\(viewModel.originalImage?.hashValue ?? 0)-\(viewModel.shadowRadius)-\(viewModel.shadowX)-\(viewModel.shadowY)-\(viewModel.shadowColor)-\(viewModel.shadowOpacity)")
+                        .id("photo-\(viewModel.rotation)-\(viewModel.originalImage?.hashValue ?? 0)")
                     }
                     
                     if viewModel.isRemovingBackground {
