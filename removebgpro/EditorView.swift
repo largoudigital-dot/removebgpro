@@ -10,8 +10,8 @@ import Combine
 
 enum EditorTab: String, CaseIterable, Identifiable {
     case shadow = "Schatten"
-    case unsplash = "Fotos"
-    case crop = "Schnitt"
+    case unsplash = "Hintergrund"
+    case crop = "Zuschneiden"
     case filter = "Filter"
     case colors = "Farben"
     case adjust = "Anpassen"
@@ -21,11 +21,11 @@ enum EditorTab: String, CaseIterable, Identifiable {
     var iconName: String {
         switch self {
         case .crop: return "crop"
-        case .filter: return "camera.filters"
-        case .colors: return "paintpalette"
+        case .filter: return "sparkles"
+        case .colors: return "paintpalette.fill"
         case .adjust: return "slider.horizontal.3"
-        case .shadow: return "drop.fill"
-        case .unsplash: return "photo.on.rectangle"
+        case .shadow: return "circle.lefthalf.striped.horizontal"
+        case .unsplash: return "photo.stack"
         }
     }
 }
@@ -70,7 +70,7 @@ struct EditorView: View {
         ZStack {
             photoArea
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, 1) // 1px horizontal padding as requested
+                .padding(.horizontal, 0) // Full bleed
                 .safeAreaInset(edge: .top, spacing: 0) {
                     navigationBar
                         .opacity(viewModel.showingTextEditor ? 0 : 1)
@@ -462,10 +462,11 @@ struct EditorView: View {
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(isShowingOriginal ? .blue : .primary)
                 .frame(width: 44, height: 44)
-                .background(Color.white.opacity(0.7))
+                .frame(width: 44, height: 44)
                 .background(.ultraThinMaterial)
+                .background(Color.white.opacity(0.5))
                 .clipShape(Circle())
-                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
         }
         .gesture(
             DragGesture(minimumDistance: 0)
@@ -492,14 +493,14 @@ struct EditorView: View {
                 viewModel.showingTextEditor = true
             }
         }) {
-            Image(systemName: "textformat")
+            Image(systemName: "t.square")
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.primary)
                 .frame(width: 44, height: 44)
-                .background(Color.white.opacity(0.7))
                 .background(.ultraThinMaterial)
+                .background(Color.white.opacity(0.5))
                 .clipShape(Circle())
-                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
         }
     }
     
@@ -511,10 +512,10 @@ struct EditorView: View {
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.primary)
                 .frame(width: 44, height: 44)
-                .background(Color.white.opacity(0.7))
                 .background(.ultraThinMaterial)
+                .background(Color.white.opacity(0.5))
                 .clipShape(Circle())
-                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
         }
     }
     

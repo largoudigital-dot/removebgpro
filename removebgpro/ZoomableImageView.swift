@@ -869,8 +869,8 @@ struct StickerView: View {
                     )
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? Color.white : Color.clear, style: StrokeStyle(lineWidth: 3, dash: [8, 4]))
-                            .shadow(color: .black.opacity(0.3), radius: 2)
+                            .stroke(isSelected ? Color.white : Color.clear, style: StrokeStyle(lineWidth: 2))
+                            .shadow(color: .black.opacity(0.3), radius: 4)
                     )
             }
             // Apply scale/rotation to the visuals
@@ -966,7 +966,8 @@ struct StickerView: View {
                 Circle()
                     .fill(Color.red)
                     .frame(width: 28, height: 28)
-                    .shadow(radius: 2)
+                    .overlay(Circle().stroke(Color.white, lineWidth: 2)) // White border
+                    .shadow(radius: 4) // Enhanced shadow
                 
                 Image(systemName: "xmark")
                     .font(.system(size: 14, weight: .bold))
@@ -984,11 +985,11 @@ struct StickerView: View {
                 Circle()
                     .fill(Color.blue)
                     .frame(width: 28, height: 28)
-                    .shadow(radius: 2)
+                    .overlay(Circle().stroke(Color.white, lineWidth: 2)) // White border
+                    .shadow(radius: 4) // Enhanced shadow
                 
-                Image(systemName: "arrow.up.left.and.arrow.down.right.circle.fill")
-                    .resizable()
-                    .frame(width: 28, height: 28)
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.white)
             }
             .offset(x: 45, y: 45)
@@ -1097,8 +1098,8 @@ struct TextItemOverlayView: View {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected && !isEditing ? Color.white : Color.clear, style: StrokeStyle(lineWidth: 2, dash: [5, 3]))
-                            .shadow(color: .black.opacity(0.3), radius: 2)
+                            .stroke(isSelected && !isEditing ? Color.white : Color.clear, style: StrokeStyle(lineWidth: 2))
+                            .shadow(color: .black.opacity(0.3), radius: 4)
                     )
                     .background(
                         GeometryReader { proxy in
@@ -1192,8 +1193,15 @@ struct TextItemOverlayView: View {
     private var selectionHandles: some View {
         ZStack {
             ZStack {
-                Circle().fill(Color.red).frame(width: 28, height: 28).shadow(radius: 2)
-                Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundColor(.white)
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 28, height: 28)
+                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                    .shadow(radius: 4)
+                
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
             }
             .offset(x: -contentSize.width/2, y: -contentSize.height/2)
             .onTapGesture {
@@ -1202,9 +1210,15 @@ struct TextItemOverlayView: View {
             }
             
             ZStack {
-                Circle().fill(Color.blue).frame(width: 28, height: 28).shadow(radius: 2)
-                Image(systemName: "arrow.up.left.and.arrow.down.right.circle.fill")
-                    .resizable().frame(width: 28, height: 28).foregroundColor(.white)
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 28, height: 28)
+                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                    .shadow(radius: 4)
+                
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
             }
             .offset(x: contentSize.width/2, y: contentSize.height/2)
             .highPriorityGesture(
