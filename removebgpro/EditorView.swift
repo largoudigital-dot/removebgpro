@@ -144,6 +144,7 @@ struct EditorView: View {
             } message: {
                 Text("Möchten Sie alle Änderungen an diesem Foto wirklich verwerfen?")
             }
+
     }
     
     private var bottomBar: some View {
@@ -245,6 +246,8 @@ struct EditorView: View {
                     }) {
                         Label("Als JPG speichern\(!viewModel.isBackgroundTransparent ? " (Empfohlen)" : "")", systemImage: "photo")
                     }
+                    
+
                 } label: {
                     Image(systemName: "square.and.arrow.down")
                         .font(.system(size: 20, weight: .regular))
@@ -364,6 +367,7 @@ struct EditorView: View {
                 }
                 .frame(width: fitSize.width, height: fitSize.height)
                 .background(Color(white: 0.95))
+                .clipped()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(alignment: .bottom) {

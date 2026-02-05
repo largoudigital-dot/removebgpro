@@ -628,4 +628,36 @@ class ImageProcessor {
         
         return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
     }
+    
+    // MARK: - WhatsApp Sticker Generation
+    func generateStickerImage(from image: UIImage, targetSize: CGFloat = 512) -> UIImage? {
+        let margin: CGFloat = targetSize * 0.03 // Proportional margin (approx 16 for 512)
+        let drawSize = targetSize - (margin * 2)
+        
+        // Calculate aspect fit scale
+        let widthRatio = drawSize / image.size.width
+        let heightRatio = drawSize / image.size.height
+        let scale = min(widthRatio, heightRatio)
+        
+        let newWidth = image.size.width * scale
+        let newHeight = image.size.height * scale
+        
+        // Center position
+        let x = (targetSize - newWidth) / 2
+        let y = (targetSize - newHeight) / 2
+        
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0 // Ensure exact pixel dimensions
+        format.opaque = false
+        
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: targetSize, height: targetSize), format: format)
+        
+        return renderer.image { context in
+            // Clear background for absolute transparency
+            context.cgContext.clear(CGRect(x: 0, y: 0, width: targetSize, height: targetSize))
+            
+            // Draw image with high quality
+            image.draw(in: CGRect(x: x, y: y, width: newWidth, height: newHeight))
+        }
+    }
 }

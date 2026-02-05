@@ -150,6 +150,10 @@ class EditorViewModel: ObservableObject {
                isShadowActive
     }
     
+    @Published var showingStickerPreview = false
+    @Published var stickerPreviewImage: UIImage? = nil
+    @Published var stickerSize: CGFloat = 512 // Default WhatsApp Sticker size
+    
     private let imageProcessor = ImageProcessor()
     private let removalService = BackgroundRemovalService()
     
@@ -605,6 +609,76 @@ class EditorViewModel: ObservableObject {
             }
             
             rootVC.present(activityVC, animated: true, completion: nil)
+        }
+    }
+    
+    func prepareStickerPreview() {
+        guard let foreground = foregroundImage ?? originalImage else { return }
+        
+        let compositeImage = self.imageProcessor.processImageWithCrop(
+            original: foreground,
+            filter: self.selectedFilter,
+            brightness: self.brightness,
+            contrast: self.contrast,
+            saturation: self.saturation,
+            blur: self.blur,
+            rotation: self.rotation,
+            aspectRatio: self.selectedAspectRatio.ratio,
+            customSize: self.customSize,
+            backgroundColor: self.backgroundColor,
+            gradientColors: self.gradientColors,
+            backgroundImage: self.backgroundImage,
+            cropRect: self.appliedCropRect,
+            stickers: self.stickers,
+            textItems: self.textItems,
+            shadowRadius: self.shadowRadius,
+            shadowX: self.shadowX,
+            shadowY: self.shadowY,
+            shadowColor: self.shadowColor,
+            shadowOpacity: self.shadowOpacity
+        ) ?? foreground
+        
+        if let stickerImage = imageProcessor.generateStickerImage(from: compositeImage, targetSize: self.stickerSize) {
+            DispatchQueue.main.async {
+                self.stickerPreviewImage = stickerImage
+                self.showingStickerPreview = true
+            }
+        }
+    }
+    
+    func shareAsSticker(completion: @escaping (Bool) -> Void) {
+        guard let stickerImage = stickerPreviewImage else {
+            completion(false)
+            return
+        }
+        
+        guard let webpData = WebPConverter.convertToWebP(image: stickerImage) else {
+            completion(false)
+            return
+        }
+        
+        // Save to temporary file
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".webp")
+        do {
+            try webpData.write(to: tempURL)
+            
+            // Share the file
+            let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
+            
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let rootVC = windowScene.windows.first?.rootViewController {
+                
+                if let popover = activityVC.popoverPresentationController {
+                    popover.sourceView = rootVC.view
+                    popover.sourceRect = CGRect(x: rootVC.view.bounds.midX, y: rootVC.view.bounds.midY, width: 0, height: 0)
+                }
+                
+                rootVC.present(activityVC, animated: true) {
+                    completion(true)
+                }
+            }
+        } catch {
+            completion(false)
         }
     }
 }
