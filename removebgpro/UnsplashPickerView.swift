@@ -127,7 +127,7 @@ struct UnsplashPickerView: View {
         .preferredColorScheme(.dark)
         .onAppear {
             if photos.isEmpty {
-                searchText = "nature"
+                searchText = "aesthetic background"
                 performSearch()
             }
         }
