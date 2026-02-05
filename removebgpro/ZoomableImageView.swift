@@ -857,21 +857,60 @@ struct StickerView: View {
                     .frame(width: 100, height: 100)
                     .contentShape(Rectangle())
                 
-                Text(sticker.content)
-                    .font(.system(size: 60))
-                    .padding(15)
-                    .background(
-                        GeometryReader { proxy in
-                            Color.clear
-                                .onAppear { contentSize = proxy.size }
-                                .onChange(of: sticker.content) { _ in contentSize = proxy.size }
-                        }
-                    )
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? Color.white : Color.clear, style: StrokeStyle(lineWidth: 2))
-                            .shadow(color: .black.opacity(0.3), radius: 4)
-                    )
+                if sticker.type == .emoji {
+                    Text(sticker.content)
+                        .font(.system(size: 60))
+                        .padding(15)
+                        .background(
+                            GeometryReader { proxy in
+                                Color.clear
+                                    .onAppear { contentSize = proxy.size }
+                                    .onChange(of: sticker.content) { _ in contentSize = proxy.size }
+                            }
+                        )
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(isSelected ? Color.white : Color.clear, style: StrokeStyle(lineWidth: 2))
+                                .shadow(color: .black.opacity(0.3), radius: 4)
+                        )
+                } else if sticker.type == .imageAsset {
+                     Image(sticker.content)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 100, height: 100) // Slightly larger for illustrative stickers
+                        .padding(10)
+                        .background(
+                            GeometryReader { proxy in
+                                Color.clear
+                                    .onAppear { contentSize = proxy.size }
+                                    .onChange(of: sticker.content) { _ in contentSize = proxy.size }
+                            }
+                        )
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(isSelected ? Color.white : Color.clear, style: StrokeStyle(lineWidth: 2))
+                                .shadow(color: .black.opacity(0.3), radius: 4)
+                        )
+                } else {
+                    Image(systemName: sticker.content)
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(sticker.color)
+                        .frame(width: 80, height: 80) // Base size for stickers
+                        .padding(15)
+                        .background(
+                            GeometryReader { proxy in
+                                Color.clear
+                                    .onAppear { contentSize = proxy.size }
+                                    .onChange(of: sticker.content) { _ in contentSize = proxy.size }
+                            }
+                        )
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(isSelected ? Color.white : Color.clear, style: StrokeStyle(lineWidth: 2))
+                                .shadow(color: .black.opacity(0.3), radius: 4)
+                        )
+                }
             }
             // Apply scale/rotation to the visuals
             .scaleEffect(sticker.scale * currentScale)

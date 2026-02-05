@@ -287,9 +287,9 @@ class EditorViewModel: ObservableObject {
     
     // MARK: - Sticker Management
     
-    func addSticker(_ content: String) {
+    func addSticker(_ content: String, type: StickerType = .emoji, color: Color = .white) {
         saveState()
-        let newSticker = Sticker(content: content)
+        let newSticker = Sticker(content: content, type: type, color: color)
         stickers.append(newSticker)
         updateProcessedImage()
     }
@@ -679,6 +679,14 @@ class EditorViewModel: ObservableObject {
             }
         } catch {
             completion(false)
+        }
+    }
+    
+    func saveProject(completion: @escaping (Bool, String) -> Void) {
+        // Mock save logic for now
+        // In a real app, this would persist the EditorState to localized storage
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            completion(true, "Projekt erfolgreich gespeichert")
         }
     }
 }

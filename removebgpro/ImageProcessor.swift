@@ -390,12 +390,24 @@ class ImageProcessor {
             
             let rect = CGRect(x: -stickerSize / 2, y: -stickerSize / 2, width: stickerSize, height: stickerSize)
             
-            let string = sticker.content as NSString
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: stickerSize * 0.8)
-            ]
-            
-            string.draw(in: rect, withAttributes: attributes)
+            if sticker.type == .emoji {
+                let string = sticker.content as NSString
+                let attributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: stickerSize * 0.8)
+                ]
+                string.draw(in: rect, withAttributes: attributes)
+            } else if sticker.type == .imageAsset {
+                 if let assetImage = UIImage(named: sticker.content) {
+                     assetImage.draw(in: rect)
+                 }
+            } else {
+                // Render SF Symbol
+                if let systemImage = UIImage(systemName: sticker.content) {
+                    let color = UIColor(sticker.color)
+                    let tintedImage = systemImage.withTintColor(color, renderingMode: .alwaysOriginal)
+                    tintedImage.draw(in: rect)
+                }
+            }
             
             context?.restoreGState()
         }

@@ -130,11 +130,11 @@ struct EditorView: View {
                 }
             }
             .sheet(isPresented: $viewModel.showingEmojiPicker) {
-                EmojiPickerView { emoji in
-                    viewModel.addSticker(emoji)
+                EmojiPickerView { content, type, color in
+                    viewModel.addSticker(content, type: type, color: color)
                     viewModel.showingEmojiPicker = false
                 }
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.fraction(0.6), .large])
             }
             .alert("Änderungen verwerfen?", isPresented: $showingExitAlert) {
                 Button("Abbrechen", role: .cancel) { }
@@ -214,6 +214,19 @@ struct EditorView: View {
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
                 }
+
+                InteractiveButton(action: {
+                    viewModel.saveProject { success, message in
+                        saveMessage = message
+                        showingSaveAlert = true
+                        if success { AppHaptics.success() }
+                    }
+                }) {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundColor(.primary)
+                        .frame(width: 44, height: 44)
+                }
                 
                 Spacer()
                 
@@ -249,7 +262,7 @@ struct EditorView: View {
                     
 
                 } label: {
-                    Image(systemName: "square.and.arrow.down")
+                    Image(systemName: "arrow.down.circle")
                         .font(.system(size: 20, weight: .regular))
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
