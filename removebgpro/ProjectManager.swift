@@ -12,6 +12,7 @@ class ProjectManager: ObservableObject {
     }
     
     func saveProject(_ project: Project) {
+        print("💾 ProjectManager: Saving project \(project.id)...")
         // Remove if exists to move to top
         recentProjects.removeAll { $0.id == project.id }
         
@@ -23,10 +24,16 @@ class ProjectManager: ObservableObject {
         }
         
         persist()
+        print("✅ ProjectManager: Project saved and persisted. Total projects: \(recentProjects.count)")
     }
     
     func deleteProject(_ project: Project) {
         recentProjects.removeAll { $0.id == project.id }
+        persist()
+    }
+    
+    func deleteProject(withId id: UUID) {
+        recentProjects.removeAll { $0.id == id }
         persist()
     }
     
@@ -38,8 +45,12 @@ class ProjectManager: ObservableObject {
     }
     
     private func persist() {
-        if let encoded = try? JSONEncoder().encode(recentProjects) {
+        do {
+            let encoded = try JSONEncoder().encode(recentProjects)
             UserDefaults.standard.set(encoded, forKey: projectsKey)
+        } catch {
+            print("❌ ProjectManager: Persistence failed - \(error.localizedDescription)")
+            print("❌ Root error: \(error)")
         }
     }
 }

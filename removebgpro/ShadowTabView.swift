@@ -100,6 +100,7 @@ struct ShadowTabView: View {
                                 viewModel.shadowOpacity = 0.5
                                 viewModel.shadowColor = .black
                             }
+                            viewModel.didChange()
                             viewModel.updateAdjustment()
                         }) {
                             VStack(spacing: 8) {
@@ -123,6 +124,7 @@ struct ShadowTabView: View {
                             viewModel.shadowY = 0
                             viewModel.shadowOpacity = 0.3
                             viewModel.shadowColor = .black
+                            viewModel.didChange()
                             viewModel.updateAdjustment()
                         }) {
                             VStack(spacing: 8) {
@@ -167,6 +169,7 @@ struct ShadowTabView: View {
         case .opacity: viewModel.shadowOpacity = 0.3
         case .color: viewModel.shadowColor = .black
         }
+        viewModel.didChange()
         viewModel.updateAdjustment()
     }
 }
@@ -204,7 +207,10 @@ struct ShadowSliderView: View {
         case .color:
             ColorPicker("Farbe wählen", selection: $viewModel.shadowColor)
                 .padding(.horizontal, 20)
-                .onChange(of: viewModel.shadowColor) { _ in viewModel.updateAdjustment() }
+                .onChange(of: viewModel.shadowColor) { _ in
+                    viewModel.didChange()
+                    viewModel.updateAdjustment()
+                }
         }
     }
 }

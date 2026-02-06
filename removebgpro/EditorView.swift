@@ -152,11 +152,17 @@ struct EditorView: View {
             }
             .alert("Editor verlassen?", isPresented: $showingExitAlert) {
                 Button("Abbrechen", role: .cancel) { }
-                Button("Projekt schließen", role: .destructive) {
+                Button("Speichern & Schließen", role: .destructive) {
+                    viewModel.saveProject { _, _ in
+                        dismiss()
+                    }
+                }
+                Button("Projekt löschen", role: .destructive) {
+                    viewModel.deleteCurrentProject()
                     dismiss()
                 }
             } message: {
-                Text("Möchten Sie die Bearbeitung beenden? Ihre Änderungen wurden automatisch gespeichert.")
+                Text("Möchten Sie die Bearbeitung beenden? Ihre Änderungen werden beim Schließen gespeichert.")
             }
 
     }

@@ -31,13 +31,14 @@ struct CodableEditorState: Codable {
     var bgOffset: CodablePoint
     var canvasScale: CGFloat
     var canvasOffset: CodablePoint
+    var version: Int
     
     enum CodingKeys: String, CodingKey {
         case selectedFilter, brightness, contrast, saturation, blur, rotation
         case selectedAspectRatio, customWidth, customHeight, backgroundColorHex, gradientColorsHex
         case backgroundImageName, foregroundImageName, appliedCropRect, stickers, textItems
         case shadowRadius, shadowX, shadowY, shadowColorHex, shadowOpacity
-        case fgScale, fgOffset, bgScale, bgOffset, canvasScale, canvasOffset
+        case fgScale, fgOffset, bgScale, bgOffset, canvasScale, canvasOffset, version
     }
     
     init(from decoder: Decoder) throws {
@@ -71,6 +72,7 @@ struct CodableEditorState: Codable {
         self.bgOffset = try container.decodeIfPresent(CodablePoint.self, forKey: .bgOffset) ?? CodablePoint(.zero)
         self.canvasScale = try container.decodeIfPresent(CGFloat.self, forKey: .canvasScale) ?? 1.0
         self.canvasOffset = try container.decodeIfPresent(CodablePoint.self, forKey: .canvasOffset) ?? CodablePoint(.zero)
+        self.version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 0
     }
     
     func encode(to encoder: Encoder) throws {
@@ -103,6 +105,7 @@ struct CodableEditorState: Codable {
         try container.encode(bgOffset, forKey: .bgOffset)
         try container.encode(canvasScale, forKey: .canvasScale)
         try container.encode(canvasOffset, forKey: .canvasOffset)
+        try container.encode(version, forKey: .version)
     }
     
     // Initializer used during saving
@@ -133,7 +136,8 @@ struct CodableEditorState: Codable {
         bgScale: CGFloat,
         bgOffset: CodablePoint,
         canvasScale: CGFloat,
-        canvasOffset: CodablePoint
+        canvasOffset: CodablePoint,
+        version: Int
     ) {
         self.selectedFilter = selectedFilter
         self.brightness = brightness
@@ -162,6 +166,7 @@ struct CodableEditorState: Codable {
         self.bgOffset = bgOffset
         self.canvasScale = canvasScale
         self.canvasOffset = canvasOffset
+        self.version = version
     }
 }
 
@@ -188,6 +193,6 @@ struct Project: Identifiable, Codable, Equatable {
     }
     
     static func == (lhs: Project, rhs: Project) -> Bool {
-        lhs.id == rhs.id
+        lhs.id == rhs.id && lhs.date == rhs.date
     }
 }

@@ -73,7 +73,7 @@ struct ColorsTabView: View {
             HStack(spacing: 12) {
                 ForEach(presetColors, id: \.self) { color in
                     ColorCircle(color: color, isSelected: viewModel.backgroundColor == color && viewModel.gradientColors == nil) {
-                        viewModel.saveState()
+                        viewModel.didChange()
                         viewModel.backgroundColor = color
                         viewModel.gradientColors = nil
                         viewModel.backgroundImage = nil
@@ -93,7 +93,7 @@ struct ColorsTabView: View {
                 ForEach(0..<gradients.count, id: \.self) { index in
                     let colors = gradients[index]
                     GradientCircle(colors: colors, isSelected: viewModel.gradientColors == colors) {
-                        viewModel.saveState()
+                        viewModel.didChange()
                         viewModel.gradientColors = colors
                         viewModel.backgroundColor = nil
                         viewModel.backgroundImage = nil
@@ -111,7 +111,7 @@ struct ColorsTabView: View {
         VStack(spacing: 16) {
             InteractiveButton(action: {
                 AppHaptics.medium()
-                viewModel.saveState()
+                viewModel.didChange()
                 viewModel.backgroundColor = nil
                 viewModel.gradientColors = nil
                 viewModel.backgroundImage = nil

@@ -94,7 +94,7 @@ struct CanvasTabView: View {
                             if ratio == .custom {
                                 showingCustomSizeDialog = true
                             } else {
-                                viewModel.saveState()
+                                viewModel.didChange()
                                 withAnimation(AppMotion.snappy) {
                                     viewModel.selectedAspectRatio = ratio
                                     if ratio != .custom {
@@ -144,7 +144,7 @@ struct CanvasTabView: View {
             Button("Abbrechen", role: .cancel) { }
             Button("OK") {
                 if let width = Double(customWidth), let height = Double(customHeight), width > 0, height > 0 {
-                    viewModel.saveState()
+                    viewModel.didChange()
                     viewModel.selectedAspectRatio = .custom
                     viewModel.customSize = CGSize(width: width, height: height)
                     viewModel.cancelCropping()

@@ -35,7 +35,6 @@ struct EditorState: Equatable {
     var shadowY: CGFloat
     var shadowColor: Color
     var shadowOpacity: Double
-    
     // ADDED: UI Transformation State
     var fgScale: CGFloat
     var fgOffset: CGSize
@@ -43,6 +42,7 @@ struct EditorState: Equatable {
     var bgOffset: CGSize
     var canvasScale: CGFloat
     var canvasOffset: CGSize
+    var version: Int // Increment this on every change-inducing action
     
     static func == (lhs: EditorState, rhs: EditorState) -> Bool {
         return lhs.selectedFilter == rhs.selectedFilter &&
@@ -69,7 +69,8 @@ struct EditorState: Equatable {
             lhs.bgScale == rhs.bgScale &&
             lhs.bgOffset == rhs.bgOffset &&
             lhs.canvasScale == rhs.canvasScale &&
-            lhs.canvasOffset == rhs.canvasOffset
+            lhs.canvasOffset == rhs.canvasOffset &&
+            lhs.version == rhs.version
     }
 }
 
@@ -138,10 +139,12 @@ class EditorViewModel: ObservableObject {
     
     // ADDED: Save Status
     @Published var saveStatus: SaveStatus = .idle
+    private var stateVersion: Int = 0
     
     // Undo/Redo Stacks
     private var undoStack: [EditorState] = []
     private var redoStack: [EditorState] = []
+    private var lastSavedState: EditorState? = nil
     private var isApplyingState = false
     
     var canUndo: Bool { !undoStack.isEmpty }
@@ -173,7 +176,12 @@ class EditorViewModel: ObservableObject {
     }
     
     var hasChanges: Bool {
-        // Any undo history or active non-default state indicates changes
+        // Prefer comparing current state to last saved state if available
+        if let last = lastSavedState {
+            return currentState() != last
+        }
+        
+        // Fallback for new projects
         return !undoStack.isEmpty || 
                selectedFilter != .none || 
                brightness != 1.0 || 
@@ -217,6 +225,8 @@ class EditorViewModel: ObservableObject {
         // Initial state
         undoStack.removeAll()
         redoStack.removeAll()
+        stateVersion = 0
+        lastSavedState = currentState()
     }
     
     private func currentState() -> EditorState {
@@ -245,8 +255,14 @@ class EditorViewModel: ObservableObject {
             bgScale: bgScale,
             bgOffset: bgOffset,
             canvasScale: canvasScale,
-            canvasOffset: canvasOffset
+            canvasOffset: canvasOffset,
+            version: stateVersion
         )
+    }
+    
+    func didChange() {
+        stateVersion += 1
+        saveState()
     }
     
     func saveState() {
@@ -318,10 +334,11 @@ class EditorViewModel: ObservableObject {
         bgOffset = state.bgOffset
         canvasScale = state.canvasScale
         canvasOffset = state.canvasOffset
+        stateVersion = state.version
     }
     
     func setBackgroundImage(_ image: UIImage) {
-        saveState()
+        didChange()
         self.backgroundImage = image
         self.backgroundColor = nil
         self.gradientColors = nil
@@ -342,7 +359,7 @@ class EditorViewModel: ObservableObject {
     func applyCrop(_ rect: CGRect) {
         // Now "rect" is relative to the FULL processed image,
         // because we show the full image in crop mode.
-        saveState()
+        didChange()
         appliedCropRect = rect
         isCropping = false // Exit crop mode so the cropped image becomes visible
         updateProcessedImage()
@@ -351,7 +368,7 @@ class EditorViewModel: ObservableObject {
     // MARK: - Sticker Management
     
     func addSticker(_ content: String, type: StickerType = .emoji, color: Color = .white) {
-        saveState()
+        didChange()
         let newSticker = Sticker(content: content, type: type, color: color)
         stickers.append(newSticker)
         updateProcessedImage()
@@ -366,11 +383,11 @@ class EditorViewModel: ObservableObject {
     }
     
     func finalizeStickerUpdate() {
-        saveState()
+        didChange()
     }
     
     func removeSticker(id: UUID) {
-        saveState()
+        didChange()
         if selectedStickerId == id {
             selectedStickerId = nil
         }
@@ -381,20 +398,21 @@ class EditorViewModel: ObservableObject {
     // MARK: - Text Management
     
     func addTextItem(_ item: TextItem) {
-        saveState()
+        didChange()
         textItems.append(item)
         updateProcessedImage()
     }
     
     func updateTextItem(_ item: TextItem) {
         if let index = textItems.firstIndex(where: { $0.id == item.id }) {
+            didChange()
             textItems[index] = item
             updateProcessedImage()
         }
     }
     
     func removeTextItem(id: UUID) {
-        saveState()
+        didChange()
         if selectedTextId == id {
             selectedTextId = nil
         }
@@ -412,7 +430,7 @@ class EditorViewModel: ObservableObject {
     }
     
     func finalizeTextUpdate() {
-        saveState()
+        didChange()
     }
     
     func selectSticker(id: UUID) {
@@ -451,7 +469,7 @@ class EditorViewModel: ObservableObject {
     }
     
     func applyFilter(_ filter: FilterType) {
-        saveState()
+        didChange()
         selectedFilter = filter
         updateProcessedImage()
     }
@@ -461,11 +479,11 @@ class EditorViewModel: ObservableObject {
     }
     
     func finishAdjustment() {
-        saveState()
+        didChange()
     }
     
     func rotateLeft() {
-        saveState()
+        didChange()
         withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
             rotation -= 90
             if rotation < 0 {
@@ -476,7 +494,7 @@ class EditorViewModel: ObservableObject {
     }
     
     func rotateRight() {
-        saveState()
+        didChange()
         withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
             rotation += 90
             if rotation >= 360 {
@@ -487,7 +505,7 @@ class EditorViewModel: ObservableObject {
     }
     
     func resetAdjustments() {
-        saveState()
+        didChange()
         brightness = 1.0
         contrast = 1.0
         saturation = 1.0
@@ -775,7 +793,12 @@ class EditorViewModel: ObservableObject {
         saveStatus = .saving
         
         let projectId = currentProjectId ?? UUID()
-        let originalName = saveImageToDocuments(original, name: "original_\(projectId.uuidString)")
+        
+        guard let originalName = saveImageToDocuments(original, name: "original_\(projectId.uuidString)") else {
+            completion(false, "Fehler: Originalbild konnte nicht auf Disk gespeichert werden")
+            return
+        }
+        
         let backgroundName = backgroundImage.flatMap { saveImageToDocuments($0, name: "background_\(projectId.uuidString)") }
         let foregroundName = foregroundImage.flatMap { saveImageToDocuments($0, name: "foreground_\(projectId.uuidString)") }
         
@@ -806,7 +829,8 @@ class EditorViewModel: ObservableObject {
             bgScale: bgScale,
             bgOffset: CodablePoint(CGPoint(x: bgOffset.width, y: bgOffset.height)),
             canvasScale: canvasScale,
-            canvasOffset: CodablePoint(CGPoint(x: canvasOffset.width, y: canvasOffset.height))
+            canvasOffset: CodablePoint(CGPoint(x: canvasOffset.width, y: canvasOffset.height)),
+            version: stateVersion
         )
         
         // Generate thumbnail
@@ -841,7 +865,10 @@ class EditorViewModel: ObservableObject {
         )
         
         self.currentProjectId = projectId
+        self.lastSavedState = currentState()
         ProjectManager.shared.saveProject(project)
+        
+        print("✅ EditorViewModel: Project \(projectId) saved successfully")
         
         self.saveStatus = .saved
         // Return to idle after a few seconds
@@ -852,6 +879,13 @@ class EditorViewModel: ObservableObject {
         }
         
         completion(true, "Projekt erfolgreich gespeichert")
+    }
+    
+    func deleteCurrentProject() {
+        if let projectId = currentProjectId {
+            ProjectManager.shared.deleteProject(withId: projectId)
+            currentProjectId = nil
+        }
     }
     
     func loadProject(_ project: Project) {
@@ -897,18 +931,26 @@ class EditorViewModel: ObservableObject {
             self.bgOffset = CGSize(width: state.bgOffset.x, height: state.bgOffset.y)
             self.canvasScale = state.canvasScale
             self.canvasOffset = CGSize(width: state.canvasOffset.x, height: state.canvasOffset.y)
+            self.stateVersion = state.version
             
             self.updateAdjustment()
+            self.lastSavedState = currentState()
             self.isApplyingState = false
         }
     }
     
     private func setupAutoSave() {
+        // Capture relevant state changes only, avoid saveStatus changes triggering it
+        // We'll use a local state comparison within the debounce
         objectWillChange
             .debounce(for: .seconds(2), scheduler: RunLoop.main)
             .sink { [weak self] _ in
-                guard let self = self, self.hasChanges, !self.isApplyingState else { return }
-                self.saveProject { _, _ in }
+                guard let self = self, !self.isApplyingState else { return }
+                
+                // Only save if the actual state content has changed relative to last save
+                if self.hasChanges {
+                    self.saveProject { _, _ in }
+                }
             }
             .store(in: &cancellables)
     }

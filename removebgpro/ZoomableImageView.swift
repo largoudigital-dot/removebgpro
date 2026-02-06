@@ -128,32 +128,6 @@ struct ZoomableImageView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // --- BACKGROUND DESELECTION LAYER ---
-                // This layer captures taps outside the stickers to deselect them
-                // without letting the tap reach the image layers.
-                if selectedStickerId != nil {
-                    Color.black.opacity(0.001)
-                        .onTapGesture {
-                            print("DEBUG: Deselection area touched")
-                            withAnimation(AppMotion.snappy) {
-                                selectedStickerId = nil
-                                selectedTextId = nil
-                            }
-                        }
-                        .zIndex(500)
-                }
-                
-                if selectedTextId != nil {
-                    Color.black.opacity(0.001)
-                        .onTapGesture {
-                            withAnimation(AppMotion.snappy) {
-                                selectedTextId = nil
-                                selectedStickerId = nil
-                            }
-                        }
-                        .zIndex(500)
-                }
-                
                 // --- PHOTO CONTENT CONTAINER ---
                 ZStack {
                     // 1. Background Layer (Bottom)
@@ -240,9 +214,6 @@ struct ZoomableImageView: View {
                 .rotationEffect(.degrees(rotation))
                 .scaleEffect(canvasScale)
                 .offset(canvasOffset)
-                // Disable hit-testing for the photo when a sticker or text is selected
-                // This prevents photo gestures from firing.
-                .allowsHitTesting(selectedStickerId == nil && selectedTextId == nil)
                 .zIndex(1)
                 // --- END CANVAS CONTAINER ---
                 
@@ -268,7 +239,7 @@ struct ZoomableImageView: View {
                                 if guideColor != .blue { guideColor = .blue }
                                 
                                 let transform = getCurrentPhotoTransform(geometry: geometry)
-                                let totalScale = transform.canvasScale * transform.fgScale
+                                let totalScale = transform.canvasScale
                                 let angle = -transform.rotation * .pi / 180
                                 
                                 let dx = translation.width / (geometry.size.width * totalScale)
@@ -395,7 +366,7 @@ struct ZoomableImageView: View {
                             if guideColor != .yellow { guideColor = .yellow }
                             
                             let transform = getCurrentPhotoTransform(geometry: geometry)
-                            let totalScale = transform.canvasScale * transform.fgScale
+                            let totalScale = transform.canvasScale
                             let angle = -transform.rotation * .pi / 180
                             
                             // 1. Calculate Expected Center Position (0.0 to 1.0 coords)
@@ -859,8 +830,8 @@ struct StickerView: View {
         let rx = sticker.position.x - 0.5
         let ry = sticker.position.y - 0.5
         
-        // 3. Apply scales (photo's own scale and canvas scale)
-        let totalScale = parentTransform.canvasScale * parentTransform.fgScale
+        // 3. Apply scales (canvas scale ONLY)
+        let totalScale = parentTransform.canvasScale
         let sx = rx * containerSize.width * totalScale
         let sy = ry * containerSize.height * totalScale
         
@@ -872,13 +843,9 @@ struct StickerView: View {
         let rotatedX = sx * cosA - sy * sinA
         let rotatedY = sx * sinA + sy * cosA
         
-        // 5. Apply offsets (fgOffset and canvasOffset)
-        // We need to account for the fact that offsets are scaled by the canvasScale? 
-        // Actually, ZoomableImageView applies offset(canvasOffset).scaleEffect(canvasScale).
-        // So canvasOffset is in unscaled points.
-        
-        let tx = centerX + rotatedX + parentTransform.fgOffset.width * parentTransform.canvasScale + parentTransform.canvasOffset.width + dragOffset.width
-        let ty = centerY + rotatedY + parentTransform.fgOffset.height * parentTransform.canvasScale + parentTransform.canvasOffset.height + dragOffset.height
+        // 5. Apply canvas offset
+        let tx = centerX + rotatedX + parentTransform.canvasOffset.width + dragOffset.width
+        let ty = centerY + rotatedY + parentTransform.canvasOffset.height + dragOffset.height
         
         return CGPoint(x: tx, y: ty)
     }
@@ -972,7 +939,7 @@ struct StickerView: View {
                     }
                     .onEnded { value in
                         print("DEBUG: Sticker Drag End (\(sticker.content))")
-                        let totalScale = parentTransform.canvasScale * parentTransform.fgScale
+                        let totalScale = parentTransform.canvasScale
                         let angle = -parentTransform.rotation * .pi / 180
                         
                         // Use dragOffset (snapped)
@@ -1140,7 +1107,7 @@ struct TextItemOverlayView: View {
         let centerY = containerSize.height / 2
         let rx = item.position.x - 0.5
         let ry = item.position.y - 0.5
-        let totalScale = parentTransform.canvasScale * parentTransform.fgScale
+        let totalScale = parentTransform.canvasScale
         let sx = rx * containerSize.width * totalScale
         let sy = ry * containerSize.height * totalScale
         let angle = parentTransform.rotation * .pi / 180
@@ -1148,8 +1115,8 @@ struct TextItemOverlayView: View {
         let sinA = sin(angle)
         let rotatedX = sx * cosA - sy * sinA
         let rotatedY = sx * sinA + sy * cosA
-        let tx = centerX + rotatedX + parentTransform.fgOffset.width * parentTransform.canvasScale + parentTransform.canvasOffset.width + dragOffset.width
-        let ty = centerY + rotatedY + parentTransform.fgOffset.height * parentTransform.canvasScale + parentTransform.canvasOffset.height + dragOffset.height
+        let tx = centerX + rotatedX + parentTransform.canvasOffset.width + dragOffset.width
+        let ty = centerY + rotatedY + parentTransform.canvasOffset.height + dragOffset.height
         return CGPoint(x: tx, y: ty)
     }
     
@@ -1216,7 +1183,7 @@ struct TextItemOverlayView: View {
                         // Re-calculate one last time or store the last snapped value?
                         // Better to re-calculate to be safe, or just use dragOffset which IS the snapped value now.
                         
-                        let totalScale = parentTransform.canvasScale * parentTransform.fgScale
+                        let totalScale = parentTransform.canvasScale
                         let angle = -parentTransform.rotation * .pi / 180
                         
                         // Use dragOffset (which is snapped) instead of value.translation (raw)
