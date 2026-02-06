@@ -8,21 +8,27 @@
 import SwiftUI
 
 enum AspectRatio: String, Codable, CaseIterable, Identifiable {
-    case free = "Frei"
-    case square = "1:1"
-    case fourFive = "4:5"
-    case nineSixteen = "9:16"
-    case sixteenNine = "16:9"
-    case apple55 = "5.5''"
-    case apple58 = "5.8''"
-    case fourThree = "4:3"
-    case threeFour = "3:4"
-    case threeTwo = "3:2"
-    case twoThree = "2:3"
-    case original = "Original"
-    case custom = "Eigene"
+    case free, square, fourFive, nineSixteen, sixteenNine, apple55, apple58, fourThree, threeFour, threeTwo, twoThree, original, custom
     
     var id: String { rawValue }
+    
+    var localizedName: String {
+        switch self {
+        case .free: return String(localized: "Frei")
+        case .square: return "1:1"
+        case .fourFive: return "4:5"
+        case .nineSixteen: return "9:16"
+        case .sixteenNine: return "16:9"
+        case .apple55: return "5.5''"
+        case .apple58: return "5.8''"
+        case .fourThree: return "4:3"
+        case .threeFour: return "3:4"
+        case .threeTwo: return "3:2"
+        case .twoThree: return "2:3"
+        case .original: return String(localized: "Original")
+        case .custom: return String(localized: "Eigene")
+        }
+    }
     
     var iconName: String {
         switch self {
@@ -40,7 +46,7 @@ enum AspectRatio: String, Codable, CaseIterable, Identifiable {
     }
     
     var displayLabel: String {
-        self.rawValue
+        self.localizedName
     }
     
     var usesCustomImage: Bool {

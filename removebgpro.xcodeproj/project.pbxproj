@@ -57,6 +57,7 @@
 		B0DYB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift */; };
 		B0DYC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift */; };
 		B0DYD7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACED7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift */; };
+		B0DYD7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings in Sources */ = {isa = PBXBuildFile; fileRef = FACED7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -96,6 +97,7 @@
 		FACEB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProjectManager.swift; sourceTree = "<group>"; };
 		FACEC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		FACED7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraPicker.swift; sourceTree = "<group>"; };
+		FACED7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -135,6 +137,7 @@
 				FACEB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift */,
 				FACEC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift */,
 				FACED7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift */,
+				FACED7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings */,
 			);
 			path = removebgpro;
 			sourceTree = "<group>";
@@ -295,6 +298,44 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				de,
+				fr,
+				es,
+				it,
+				"pt-BR",
+				"pt-PT",
+				nl,
+				ru,
+				"zh-Hans",
+				"zh-Hant",
+				ja,
+				ko,
+				tr,
+				ar,
+				hi,
+				pl,
+				sv,
+				da,
+				nb,
+				fi,
+				el,
+				he,
+				th,
+				vi,
+				id,
+				ms,
+				cs,
+				hu,
+				ro,
+				uk,
+				hr,
+				sk,
+				ca,
+				bg,
+				lt,
+				lv,
+				et,
+				fa,
 				Base,
 			);
 			mainGroup = 915A33642F326A4F001FAAD8;
@@ -373,6 +414,7 @@
 				B0DYB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift in Sources */,
 				B0DYC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift in Sources */,
 				B0DYD7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift in Sources */,
+				B0DYD7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

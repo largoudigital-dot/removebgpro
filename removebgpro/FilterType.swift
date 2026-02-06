@@ -10,19 +10,25 @@ import SwiftUI
 import Combine
 
 enum FilterType: String, CaseIterable, Identifiable, Codable {
-    case none = "Original"
-    case losAngeles = "Los Angeles"
-    case paris = "Paris"
-    case tokyo = "Tokyo"
-    case london = "London"
-    case newYork = "New York"
-    case milan = "Milan"
-    case sepia = "Antique"
-    case dramatic = "Studio"
+    case none, losAngeles, paris, tokyo, london, newYork, milan, sepia, dramatic
     
     var id: String { rawValue }
     
+    var localizedName: String {
+        switch self {
+        case .none: return String(localized: "Original")
+        case .losAngeles: return "Los Angeles"
+        case .paris: return "Paris"
+        case .tokyo: return "Tokyo"
+        case .london: return "London"
+        case .newYork: return "New York"
+        case .milan: return "Milan"
+        case .sepia: return String(localized: "Antique")
+        case .dramatic: return String(localized: "Studio")
+        }
+    }
+    
     var displayName: String {
-        rawValue
+        self.localizedName
     }
 }

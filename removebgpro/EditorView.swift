@@ -9,14 +9,20 @@ import SwiftUI
 import Combine
 
 enum EditorTab: String, CaseIterable, Identifiable {
-    case unsplash = "Hintergrund"
-    case shadow = "Schatten"
-    case crop = "Zuschneiden"
-    case filter = "Filter"
-    case colors = "Farben"
-    case adjust = "Anpassen"
+    case unsplash, shadow, crop, filter, colors, adjust
     
     var id: String { rawValue }
+    
+    var localizedName: String {
+        switch self {
+        case .unsplash: return String(localized: "Hintergrund")
+        case .shadow: return String(localized: "Schatten")
+        case .crop: return String(localized: "Zuschneiden")
+        case .filter: return String(localized: "Filter")
+        case .colors: return String(localized: "Farben")
+        case .adjust: return String(localized: "Anpassen")
+        }
+    }
     
     var iconName: String {
         switch self {
@@ -31,11 +37,17 @@ enum EditorTab: String, CaseIterable, Identifiable {
 }
 
 enum ColorPickerTab: String, CaseIterable, Identifiable {
-    case presets = "Presets"
-    case gradients = "Verläufe"
-    case transparent = "Transparent"
+    case presets, gradients, transparent
     
     var id: String { rawValue }
+    
+    var localizedName: String {
+        switch self {
+        case .presets: return String(localized: "Presets")
+        case .gradients: return String(localized: "Verläufe")
+        case .transparent: return String(localized: "Transparent")
+        }
+    }
     
     var iconName: String {
         switch self {
@@ -132,7 +144,6 @@ struct EditorView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(2000)
             }
-        }
             .alert("Speichern", isPresented: $showingSaveAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
@@ -681,7 +692,7 @@ struct TabButton: View {
                     }
                 }
                 
-                Text(tab.rawValue)
+                Text(tab.localizedName)
                     .font(.system(size: 10, weight: isSelected ? .bold : .medium))
             }
             .foregroundColor(isSelected ? .blue : .primary.opacity(0.6))

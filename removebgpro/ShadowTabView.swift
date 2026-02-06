@@ -2,13 +2,19 @@ import SwiftUI
 import Combine
 
 enum ShadowParameter: String, Codable, CaseIterable, Identifiable {
-    case radius = "Weichheit"
-    case x = "X-Versatz"
-    case y = "Y-Versatz"
-    case opacity = "Deckkraft"
-    case color = "Farbe"
+    case radius, x, y, opacity, color
     
     var id: String { rawValue }
+    
+    var localizedName: String {
+        switch self {
+        case .radius: return String(localized: "Weichheit")
+        case .x: return String(localized: "X-Versatz")
+        case .y: return String(localized: "Y-Versatz")
+        case .opacity: return String(localized: "Deckkraft")
+        case .color: return String(localized: "Farbe")
+        }
+    }
     
     var iconName: String {
         switch self {
@@ -31,7 +37,7 @@ struct ShadowTabView: View {
                 // Slider Detail View
                 HStack(spacing: 12) {
                     VStack(spacing: 4) {
-                        Text(parameter.rawValue)
+                        Text(parameter.localizedName)
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.primary)
                         
@@ -81,7 +87,7 @@ struct ShadowTabView: View {
                                         .font(.system(size: 22))
                                         .foregroundColor(.primary)
                                     
-                                    Text(parameter.rawValue)
+                                    Text(parameter.localizedName)
                                         .font(.system(size: 10, weight: .medium))
                                         .foregroundColor(.primary.opacity(0.8))
                                 }

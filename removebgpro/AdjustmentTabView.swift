@@ -9,12 +9,18 @@ import SwiftUI
 import Combine
 
 enum AdjustmentParameter: String, Codable, CaseIterable, Identifiable {
-    case brightness = "Helligkeit"
-    case contrast = "Kontrast"
-    case saturation = "Sättigung"
-    case sharpness = "Schärfe"
+    case brightness, contrast, saturation, sharpness
     
     var id: String { rawValue }
+    
+    var localizedName: String {
+        switch self {
+        case .brightness: return String(localized: "Helligkeit")
+        case .contrast: return String(localized: "Kontrast")
+        case .saturation: return String(localized: "Sättigung")
+        case .sharpness: return String(localized: "Schärfe")
+        }
+    }
     
     var iconName: String {
         switch self {
@@ -37,7 +43,7 @@ struct AdjustmentTabView: View {
                 HStack(spacing: 12) {
                     // Center Slider Area
                     VStack(spacing: 4) {
-                        Text(parameter.rawValue)
+                        Text(parameter.localizedName)
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.primary)
                         
@@ -83,7 +89,7 @@ struct AdjustmentTabView: View {
                                         .font(.system(size: 22))
                                         .foregroundColor(.primary)
                                     
-                                    Text(parameter.rawValue)
+                                    Text(parameter.localizedName)
                                         .font(.system(size: 10, weight: .medium))
                                         .foregroundColor(.primary.opacity(0.8))
                                 }
