@@ -30,7 +30,7 @@ enum AspectRatio: String, Codable, CaseIterable, Identifiable {
         case .square, .fourFive: return "instagram"
         case .nineSixteen: return "tiktok"
         case .sixteenNine: return "rectangle.ratio.16.to.9"
-        case .apple55, .apple58: return "apple-icon"
+        case .apple55, .apple58: return "iphone"
         case .fourThree: return "facebook"
         case .threeFour: return "rectangle.portrait"
         case .threeTwo, .twoThree: return "rectangle.ratio.3.to.2"
@@ -45,7 +45,7 @@ enum AspectRatio: String, Codable, CaseIterable, Identifiable {
     
     var usesCustomImage: Bool {
         switch self {
-        case .square, .fourFive, .nineSixteen, .fourThree:
+        case .square, .fourFive, .nineSixteen, .fourThree, .threeFour:
             return true
         default:
             return false

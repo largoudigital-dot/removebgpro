@@ -56,6 +56,7 @@
 		B0DYA7E2F2B7436DB36519E9F330C151 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEA7E2F2B7436DB36519E9F330C151 /* Project.swift */; };
 		B0DYB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift */; };
 		B0DYC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift */; };
+		B0DYD7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACED7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -94,6 +95,7 @@
 		FACEA7E2F2B7436DB36519E9F330C151 /* Project.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Project.swift; sourceTree = "<group>"; };
 		FACEB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProjectManager.swift; sourceTree = "<group>"; };
 		FACEC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		FACED7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraPicker.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -132,6 +134,7 @@
 				FACEA7E2F2B7436DB36519E9F330C151 /* Project.swift */,
 				FACEB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift */,
 				FACEC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift */,
+				FACED7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift */,
 			);
 			path = removebgpro;
 			sourceTree = "<group>";
@@ -369,6 +372,7 @@
 				B0DYA7E2F2B7436DB36519E9F330C151 /* Project.swift in Sources */,
 				B0DYB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift in Sources */,
 				B0DYC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift in Sources */,
+				B0DYD7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
