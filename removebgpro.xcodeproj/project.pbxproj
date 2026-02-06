@@ -52,12 +52,12 @@
 		B0DYF745828C4D3F907FC7867A4D8C29 /* WebPConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE2F57C29846839A63F73BFF5544A1 /* WebPConverter.swift */; };
 		B0DY054BD3FD4BFD875FF3823F2A1EFB /* ZoomableImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE849087624D1E9C8CBF5BF8966B9D /* ZoomableImageView.swift */; };
 		B0DYB79EA6AC452CA1DF8C7BAC1708E1 /* removebgproApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEDA1B8A3B46F9BCD134B4A48D1093 /* removebgproApp.swift */; };
-		B0DY8E00553843879F11A1E4515F091B /* Assets.xcassets in Sources */ = {isa = PBXBuildFile; fileRef = FACE01DAB7574AE1BA67C324E08E842B /* Assets.xcassets */; };
+		B0DY8E00553843879F11A1E4515F091B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FACE01DAB7574AE1BA67C324E08E842B /* Assets.xcassets */; };
 		B0DYA7E2F2B7436DB36519E9F330C151 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEA7E2F2B7436DB36519E9F330C151 /* Project.swift */; };
 		B0DYB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift */; };
 		B0DYC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift */; };
 		B0DYD7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACED7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift */; };
-		B0DYD7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings in Sources */ = {isa = PBXBuildFile; fileRef = FACED7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings */; };
+		B0DYD7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = FACED7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings */; };
 		B0DYE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift */; };
 		B0DYF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift */; };
 /* End PBXBuildFile section */
@@ -364,6 +364,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B0DY8E00553843879F11A1E4515F091B /* Assets.xcassets in Resources */,
+				B0DYD7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -420,7 +421,6 @@
 				B0DYB7E2F2B7436DB36519E9F330C152 /* ProjectManager.swift in Sources */,
 				B0DYC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift in Sources */,
 				B0DYD7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift in Sources */,
-				B0DYD7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings in Sources */,
 				B0DYE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift in Sources */,
 				B0DYF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift in Sources */,
 			);
