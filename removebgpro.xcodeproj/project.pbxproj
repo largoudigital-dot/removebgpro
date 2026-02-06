@@ -58,6 +58,8 @@
 		B0DYC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift */; };
 		B0DYD7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACED7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift */; };
 		B0DYD7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings in Sources */ = {isa = PBXBuildFile; fileRef = FACED7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings */; };
+		B0DYE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift */; };
+		B0DYF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -98,6 +100,8 @@
 		FACEC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		FACED7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraPicker.swift; sourceTree = "<group>"; };
 		FACED7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		FACEE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LanguageManager.swift; sourceTree = "<group>"; };
+		FACEF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LanguagePickerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -138,6 +142,8 @@
 				FACEC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift */,
 				FACED7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift */,
 				FACED7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings */,
+				FACEE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift */,
+				FACEF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift */,
 			);
 			path = removebgpro;
 			sourceTree = "<group>";
@@ -415,6 +421,8 @@
 				B0DYC7E2F2B7436DB36519E9F330C153 /* SettingsView.swift in Sources */,
 				B0DYD7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift in Sources */,
 				B0DYD7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings in Sources */,
+				B0DYE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift in Sources */,
+				B0DYF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

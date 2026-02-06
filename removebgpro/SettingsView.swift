@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var showingLanguagePicker = false
     
     var body: some View {
         ZStack {
@@ -32,6 +33,9 @@ struct SettingsView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         SettingsGroup(title: "App") {
+                            Button(action: { showingLanguagePicker = true }) {
+                                SettingsRow(icon: "globe", title: "Sprache", color: .purple)
+                            }
                             SettingsRow(icon: "info.circle", title: "Über die App", color: .blue)
                             SettingsRow(icon: "star", title: "App bewerten", color: .yellow)
                             SettingsRow(icon: "square.and.arrow.up", title: "App teilen", color: .green)
@@ -55,6 +59,9 @@ struct SettingsView: View {
                     .padding(.horizontal, 24)
                 }
             }
+        }
+        .sheet(isPresented: $showingLanguagePicker) {
+            LanguagePickerView()
         }
     }
 }

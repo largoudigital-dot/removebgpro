@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct removebgproApp: App {
+    @StateObject private var languageManager = LanguageManager.shared
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.locale, languageManager.locale)
         }
     }
 }
