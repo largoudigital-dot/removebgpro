@@ -582,7 +582,7 @@ class EditorViewModel: ObservableObject {
         }
     }
     
-    func saveToGallery(format: ImageFormat = .png, completion: @escaping (Bool, String) -> Void) {
+    func saveToGallery(format: ImageFormat = .png, completion: @escaping (Bool, LocalizedStringKey) -> Void) {
         guard let foreground = foregroundImage ?? originalImage else {
             completion(false, "Kein Bild zum Speichern")
             return

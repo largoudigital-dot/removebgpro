@@ -28,7 +28,7 @@ enum FilterType: String, CaseIterable, Identifiable, Codable {
         }
     }
     
-    var displayName: String {
+    var displayName: LocalizedStringKey {
         self.localizedName
     }
 }

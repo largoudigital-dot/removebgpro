@@ -45,7 +45,7 @@ enum AspectRatio: String, Codable, CaseIterable, Identifiable {
         }
     }
     
-    var displayLabel: String {
+    var displayLabel: LocalizedStringKey {
         self.localizedName
     }
     
