@@ -143,8 +143,9 @@ struct EditorView: View {
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(2000)
-            }
-            .alert("Speichern", isPresented: $showingSaveAlert) {
+        }
+    }
+    .alert("Speichern", isPresented: $showingSaveAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text(saveMessage)
