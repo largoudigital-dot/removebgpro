@@ -13,12 +13,12 @@ enum AdjustmentParameter: String, Codable, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
-    var localizedName: String {
+    var localizedName: LocalizedStringKey {
         switch self {
-        case .brightness: return String(localized: "Helligkeit")
-        case .contrast: return String(localized: "Kontrast")
-        case .saturation: return String(localized: "Sättigung")
-        case .sharpness: return String(localized: "Schärfe")
+        case .brightness: return "Helligkeit"
+        case .contrast: return "Kontrast"
+        case .saturation: return "Sättigung"
+        case .sharpness: return "Schärfe"
         }
     }
     

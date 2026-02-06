@@ -13,14 +13,14 @@ enum EditorTab: String, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
-    var localizedName: String {
+    var localizedName: LocalizedStringKey {
         switch self {
-        case .unsplash: return String(localized: "Hintergrund")
-        case .shadow: return String(localized: "Schatten")
-        case .crop: return String(localized: "Zuschneiden")
-        case .filter: return String(localized: "Filter")
-        case .colors: return String(localized: "Farben")
-        case .adjust: return String(localized: "Anpassen")
+        case .unsplash: return "Hintergrund"
+        case .shadow: return "Schatten"
+        case .crop: return "Zuschneiden"
+        case .filter: return "Filter"
+        case .colors: return "Farben"
+        case .adjust: return "Anpassen"
         }
     }
     
@@ -41,11 +41,11 @@ enum ColorPickerTab: String, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
-    var localizedName: String {
+    var localizedName: LocalizedStringKey {
         switch self {
-        case .presets: return String(localized: "Presets")
-        case .gradients: return String(localized: "Verläufe")
-        case .transparent: return String(localized: "Transparent")
+        case .presets: return "Presets"
+        case .gradients: return "Verläufe"
+        case .transparent: return "Transparent"
         }
     }
     
@@ -65,7 +65,7 @@ struct EditorView: View {
     @State private var selectedColorPicker: ColorPickerTab? = nil
     @State private var selectedShadowParameter: ShadowParameter? = nil
     @State private var showingSaveAlert = false
-    @State private var saveMessage = ""
+    @State private var saveMessage: LocalizedStringKey = ""
     @State private var showingUnsplashPicker = false
     @State private var showingExitAlert = false
     @State private var isShowingOriginal = false

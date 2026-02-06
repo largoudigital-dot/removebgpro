@@ -14,17 +14,17 @@ enum FilterType: String, CaseIterable, Identifiable, Codable {
     
     var id: String { rawValue }
     
-    var localizedName: String {
+    var localizedName: LocalizedStringKey {
         switch self {
-        case .none: return String(localized: "Original")
+        case .none: return "Original"
         case .losAngeles: return "Los Angeles"
         case .paris: return "Paris"
         case .tokyo: return "Tokyo"
         case .london: return "London"
         case .newYork: return "New York"
         case .milan: return "Milan"
-        case .sepia: return String(localized: "Antique")
-        case .dramatic: return String(localized: "Studio")
+        case .sepia: return "Antique"
+        case .dramatic: return "Studio"
         }
     }
     

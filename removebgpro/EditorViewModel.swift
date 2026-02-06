@@ -638,9 +638,9 @@ class EditorViewModel: ObservableObject {
             }) { success, error in
                 DispatchQueue.main.async {
                     if success {
-                        completion(true, "Foto als \(format == .png ? "PNG" : "JPG") gespeichert")
+                        completion(true, "Foto gespeichert")
                     } else {
-                        completion(false, error?.localizedDescription ?? "Fehler beim Speichern")
+                        completion(false, "Fehler beim Speichern")
                     }
                 }
             }

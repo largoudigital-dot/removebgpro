@@ -12,9 +12,9 @@ enum AspectRatio: String, Codable, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
-    var localizedName: String {
+    var localizedName: LocalizedStringKey {
         switch self {
-        case .free: return String(localized: "Frei")
+        case .free: return "Frei"
         case .square: return "1:1"
         case .fourFive: return "4:5"
         case .nineSixteen: return "9:16"
@@ -25,8 +25,8 @@ enum AspectRatio: String, Codable, CaseIterable, Identifiable {
         case .threeFour: return "3:4"
         case .threeTwo: return "3:2"
         case .twoThree: return "2:3"
-        case .original: return String(localized: "Original")
-        case .custom: return String(localized: "Eigene")
+        case .original: return "Original"
+        case .custom: return "Eigene"
         }
     }
     

@@ -6,13 +6,13 @@ enum ShadowParameter: String, Codable, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
-    var localizedName: String {
+    var localizedName: LocalizedStringKey {
         switch self {
-        case .radius: return String(localized: "Weichheit")
-        case .x: return String(localized: "X-Versatz")
-        case .y: return String(localized: "Y-Versatz")
-        case .opacity: return String(localized: "Deckkraft")
-        case .color: return String(localized: "Farbe")
+        case .radius: return "Weichheit"
+        case .x: return "X-Versatz"
+        case .y: return "Y-Versatz"
+        case .opacity: return "Deckkraft"
+        case .color: return "Farbe"
         }
     }
     
