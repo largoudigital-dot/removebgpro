@@ -8,7 +8,7 @@
 import SwiftUI
 import Combine
 
-enum AdjustmentParameter: String, CaseIterable, Identifiable {
+enum AdjustmentParameter: String, Codable, CaseIterable, Identifiable {
     case brightness = "Helligkeit"
     case contrast = "Kontrast"
     case saturation = "Sättigung"

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-enum AspectRatio: String, CaseIterable, Identifiable {
+enum AspectRatio: String, Codable, CaseIterable, Identifiable {
     case free = "Frei"
     case square = "1:1"
     case fourFive = "4:5"

@@ -1,7 +1,7 @@
 import SwiftUI
 import Combine
 
-enum ShadowParameter: String, CaseIterable, Identifiable {
+enum ShadowParameter: String, Codable, CaseIterable, Identifiable {
     case radius = "Weichheit"
     case x = "X-Versatz"
     case y = "Y-Versatz"

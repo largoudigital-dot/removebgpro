@@ -60,10 +60,12 @@ struct EditorView: View {
     @State private var tempTextItem: TextItem? = nil
     @Environment(\.dismiss) private var dismiss
     
-    let selectedImage: UIImage
+    let selectedImage: UIImage?
+    let project: Project?
     
-    init(image: UIImage) {
+    init(image: UIImage? = nil, project: Project? = nil) {
         self.selectedImage = image
+        self.project = project
     }
     
     var body: some View {
@@ -86,8 +88,20 @@ struct EditorView: View {
                 .navigationBarHidden(true)
                 .preferredColorScheme(.light)
                 .onAppear {
-                    viewModel.setImage(selectedImage)
+                    if let project = project {
+                        viewModel.loadProject(project)
+                    } else if let image = selectedImage {
+                        viewModel.setImage(image)
+                    }
                 }
+            
+            // ADDED: Save Status HUD (Below Header)
+            VStack {
+                saveStatusHUD
+                    .padding(.top, 100) // Positioned just below the navigation bar
+                Spacer()
+            }
+            .allowsHitTesting(false)
             
             if viewModel.showingTextEditor, let item = tempTextItem {
                 TextEditorOverlay(
@@ -136,13 +150,13 @@ struct EditorView: View {
                 }
                 .presentationDetents([.fraction(0.6), .large])
             }
-            .alert("Änderungen verwerfen?", isPresented: $showingExitAlert) {
+            .alert("Editor verlassen?", isPresented: $showingExitAlert) {
                 Button("Abbrechen", role: .cancel) { }
-                Button("Verwerfen", role: .destructive) {
+                Button("Projekt schließen", role: .destructive) {
                     dismiss()
                 }
             } message: {
-                Text("Möchten Sie alle Änderungen an diesem Foto wirklich verwerfen?")
+                Text("Möchten Sie die Bearbeitung beenden? Ihre Änderungen wurden automatisch gespeichert.")
             }
 
     }
@@ -198,16 +212,47 @@ struct EditorView: View {
         .background(.ultraThinMaterial, ignoresSafeAreaEdges: .bottom)
     }
     
+    private var saveStatusHUD: some View {
+        Group {
+            if viewModel.saveStatus != .idle {
+                HStack(spacing: 8) {
+                    if viewModel.saveStatus == .saving {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.system(size: 14, weight: .bold))
+                    }
+                    
+                    Text(viewModel.saveStatus == .saving ? "Speichere..." : "Änderungen gespeichert")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.primary.opacity(0.8))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(.ultraThinMaterial)
+                .cornerRadius(20)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.black.opacity(0.05), lineWidth: 0.5)
+                )
+                .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .top).combined(with: .opacity),
+                    removal: .opacity.combined(with: .scale(scale: 0.9))
+                ))
+            }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: viewModel.saveStatus)
+    }
+    
     private var navigationBar: some View {
         ZStack {
             HStack {
                 InteractiveButton(action: {
-                    if viewModel.hasChanges {
-                        AppHaptics.medium()
-                        showingExitAlert = true
-                    } else {
-                        dismiss()
-                    }
+                    AppHaptics.medium()
+                    showingExitAlert = true
                 }) {
                     Image(systemName: "xmark")
                         .font(.system(size: 17, weight: .bold))
@@ -217,9 +262,12 @@ struct EditorView: View {
 
                 InteractiveButton(action: {
                     viewModel.saveProject { success, message in
-                        saveMessage = message
-                        showingSaveAlert = true
-                        if success { AppHaptics.success() }
+                        if !success {
+                            saveMessage = message
+                            showingSaveAlert = true
+                        } else {
+                            AppHaptics.success()
+                        }
                     }
                 }) {
                     Image(systemName: "square.and.arrow.down")
@@ -357,7 +405,13 @@ struct EditorView: View {
                             shadowX: viewModel.shadowX,
                             shadowY: viewModel.shadowY,
                             shadowColor: viewModel.shadowColor,
-                            shadowOpacity: viewModel.shadowOpacity
+                            shadowOpacity: viewModel.shadowOpacity,
+                            fgScale: $viewModel.fgScale,
+                            fgOffset: $viewModel.fgOffset,
+                            bgScale: $viewModel.bgScale,
+                            bgOffset: $viewModel.bgOffset,
+                            canvasScale: $viewModel.canvasScale,
+                            canvasOffset: $viewModel.canvasOffset
                         )
                         .id("photo-\(viewModel.rotation)-\(viewModel.originalImage?.hashValue ?? 0)")
                     }

@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 
-enum FilterType: String, CaseIterable, Identifiable {
+enum FilterType: String, CaseIterable, Identifiable, Codable {
     case none = "Original"
     case losAngeles = "Los Angeles"
     case paris = "Paris"

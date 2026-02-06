@@ -73,9 +73,79 @@ extension Color {
             opacity: Double(a) / 255
         )
     }
+    
+    var hex: String? {
+        let uiColor = UIColor(self)
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
+        
+        guard uiColor.getRed(&r, green: &g, blue: &b, alpha: &a) else { return nil }
+        
+        if a == 1.0 {
+            return String(format: "#%02lX%02lX%02lX",
+                          lroundf(Float(r * 255)),
+                          lroundf(Float(g * 255)),
+                          lroundf(Float(b * 255)))
+        } else {
+            return String(format: "#%02lX%02lX%02lX%02lX",
+                          lroundf(Float(a * 255)),
+                          lroundf(Float(r * 255)),
+                          lroundf(Float(g * 255)),
+                          lroundf(Float(b * 255)))
+        }
+    }
 }
 
 // MARK: - Scroll Discovery Utilities
+// MARK: - Codable Basic Types Wrappers
+struct CodablePoint: Codable, Equatable {
+    var x: CGFloat
+    var y: CGFloat
+    
+    var cgPoint: CGPoint {
+        CGPoint(x: x, y: y)
+    }
+    
+    init(_ point: CGPoint) {
+        self.x = point.x
+        self.y = point.y
+    }
+}
+
+struct CodableRect: Codable, Equatable {
+    var x: CGFloat
+    var y: CGFloat
+    var width: CGFloat
+    var height: CGFloat
+    
+    var cgRect: CGRect {
+        CGRect(x: x, y: y, width: width, height: height)
+    }
+    
+    init(_ rect: CGRect) {
+        self.x = rect.origin.x
+        self.y = rect.origin.y
+        self.width = rect.width
+        self.height = rect.height
+    }
+}
+
+struct CodableSize: Codable, Equatable {
+    var width: CGFloat
+    var height: CGFloat
+    
+    var cgSize: CGSize {
+        CGSize(width: width, height: height)
+    }
+    
+    init(_ size: CGSize) {
+        self.width = size.width
+        self.height = size.height
+    }
+}
+
 extension View {
     func fadedEdge(leading: Bool = true, trailing: Bool = true) -> some View {
         self.mask(

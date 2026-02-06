@@ -1,9 +1,7 @@
-
-import Foundation
 import SwiftUI
-import Combine
+import Foundation
 
-enum TextAlignment: String, CaseIterable, Identifiable {
+enum TextAlignment: String, Codable, CaseIterable, Identifiable {
     case left, center, right
     var id: String { rawValue }
     
@@ -16,7 +14,7 @@ enum TextAlignment: String, CaseIterable, Identifiable {
     }
 }
 
-enum TextBackgroundStyle: String, CaseIterable, Identifiable {
+enum TextBackgroundStyle: String, Codable, CaseIterable, Identifiable {
     case none, solid, semiTransparent
     var id: String { rawValue }
     
@@ -29,17 +27,38 @@ enum TextBackgroundStyle: String, CaseIterable, Identifiable {
     }
 }
 
-struct TextItem: Identifiable, Equatable {
+struct TextItem: Identifiable, Codable, Equatable {
     let id: UUID
     var text: String
     var fontName: String
-    var color: Color
-    var backgroundColor: Color
+    var colorHex: String
+    var backgroundColorHex: String
     var backgroundStyle: TextBackgroundStyle
     var alignment: TextAlignment
-    var position: CGPoint // Normalized 0-1
+    var codablePosition: CodablePoint // Normalized 0-1
     var scale: CGFloat
-    var rotation: Angle
+    var rotationDegrees: Double
+    
+    var position: CGPoint {
+        get { codablePosition.cgPoint }
+        set { codablePosition = CodablePoint(newValue) }
+    }
+    
+    // Non-stored properties or properties with custom logic
+    var color: Color {
+        get { Color(hex: colorHex) }
+        set { colorHex = newValue.hex ?? "#FFFFFF" }
+    }
+    
+    var backgroundColor: Color {
+        get { Color(hex: backgroundColorHex) }
+        set { backgroundColorHex = newValue.hex ?? "#000000" }
+    }
+    
+    var rotation: Angle {
+        get { .degrees(rotationDegrees) }
+        set { rotationDegrees = newValue.degrees }
+    }
     
     init(
         id: UUID = UUID(),
@@ -56,12 +75,16 @@ struct TextItem: Identifiable, Equatable {
         self.id = id
         self.text = text
         self.fontName = fontName
-        self.color = color
-        self.backgroundColor = backgroundColor
+        self.colorHex = color.hex ?? "#FFFFFF"
+        self.backgroundColorHex = backgroundColor.hex ?? "#000000"
         self.backgroundStyle = backgroundStyle
         self.alignment = alignment
-        self.position = position
+        self.codablePosition = CodablePoint(position)
         self.scale = scale
-        self.rotation = rotation
+        self.rotationDegrees = rotation.degrees
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id, text, fontName, colorHex, backgroundColorHex, backgroundStyle, alignment, codablePosition, scale, rotationDegrees
     }
 }

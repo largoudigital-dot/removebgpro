@@ -35,7 +35,53 @@ struct ZoomableImageView: View {
     let shadowColor: Color
     let shadowOpacity: Double
     
-    init(foreground: UIImage?, background: UIImage?, original: UIImage?, backgroundColor: Color?, gradientColors: [Color]?, activeLayer: SelectedLayer, rotation: CGFloat, isCropping: Bool = false, appliedCropRect: CGRect? = nil, onCropCommit: ((CGRect) -> Void)? = nil, stickers: Binding<[Sticker]>, selectedStickerId: Binding<UUID?>, onDeleteSticker: @escaping (UUID) -> Void, textItems: Binding<[TextItem]>, selectedTextId: Binding<UUID?>, onDeleteText: @escaping (UUID) -> Void, onEditText: @escaping (TextItem) -> Void, isEditingText: Bool = false, shadowRadius: CGFloat = 0, shadowX: CGFloat = 0, shadowY: CGFloat = 0, shadowColor: Color = .black, shadowOpacity: Double = 0.3) {
+    // ADDED: Transformation State (Moved to bindings)
+    @Binding var fgScale: CGFloat
+    @Binding var fgOffset: CGSize
+    @Binding var bgScale: CGFloat
+    @Binding var bgOffset: CGSize
+    @Binding var canvasScale: CGFloat
+    @Binding var canvasOffset: CGSize
+    
+    // Internal gesture state (remains @State as it's transient)
+    @State private var fgLastScale: CGFloat = 1.0
+    @State private var fgLastOffset: CGSize = .zero
+    @State private var bgLastScale: CGFloat = 1.0
+    @State private var bgLastOffset: CGSize = .zero
+    @State private var canvasLastScale: CGFloat = 1.0
+    @State private var canvasLastOffset: CGSize = .zero
+    
+    init(
+        foreground: UIImage?,
+        background: UIImage?,
+        original: UIImage?,
+        backgroundColor: Color?,
+        gradientColors: [Color]?,
+        activeLayer: SelectedLayer,
+        rotation: CGFloat,
+        isCropping: Bool = false,
+        appliedCropRect: CGRect? = nil,
+        onCropCommit: ((CGRect) -> Void)? = nil,
+        stickers: Binding<[Sticker]>,
+        selectedStickerId: Binding<UUID?>,
+        onDeleteSticker: @escaping (UUID) -> Void,
+        textItems: Binding<[TextItem]>,
+        selectedTextId: Binding<UUID?>,
+        onDeleteText: @escaping (UUID) -> Void,
+        onEditText: @escaping (TextItem) -> Void,
+        isEditingText: Bool = false,
+        shadowRadius: CGFloat = 0,
+        shadowX: CGFloat = 0,
+        shadowY: CGFloat = 0,
+        shadowColor: Color = .black,
+        shadowOpacity: Double = 0.3,
+        fgScale: Binding<CGFloat>,
+        fgOffset: Binding<CGSize>,
+        bgScale: Binding<CGFloat>,
+        bgOffset: Binding<CGSize>,
+        canvasScale: Binding<CGFloat>,
+        canvasOffset: Binding<CGSize>
+    ) {
         self.foreground = foreground
         self.background = background
         self.original = original
@@ -61,25 +107,14 @@ struct ZoomableImageView: View {
         self.shadowY = shadowY
         self.shadowColor = shadowColor
         self.shadowOpacity = shadowOpacity
+        
+        self._fgScale = fgScale
+        self._fgOffset = fgOffset
+        self._bgScale = bgScale
+        self._bgOffset = bgOffset
+        self._canvasScale = canvasScale
+        self._canvasOffset = canvasOffset
     }
-    
-    // Foreground State
-    @State private var fgScale: CGFloat = 1.0
-    @State private var fgLastScale: CGFloat = 1.0
-    @State private var fgOffset: CGSize = .zero
-    @State private var fgLastOffset: CGSize = .zero
-    
-    // Background State
-    @State private var bgScale: CGFloat = 1.0
-    @State private var bgLastScale: CGFloat = 1.0
-    @State private var bgOffset: CGSize = .zero
-    @State private var bgLastOffset: CGSize = .zero
-    
-    // Canvas State (Affects both)
-    @State private var canvasScale: CGFloat = 1.0
-    @State private var canvasLastScale: CGFloat = 1.0
-    @State private var canvasOffset: CGSize = .zero
-    @State private var canvasLastOffset: CGSize = .zero
     
     @State private var showVGuide = false
     @State private var showHGuide = false

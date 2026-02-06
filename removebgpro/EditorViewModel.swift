@@ -9,6 +9,12 @@ import SwiftUI
 import Photos
 import Combine
 
+enum SaveStatus {
+    case idle
+    case saving
+    case saved
+}
+
 struct EditorState: Equatable {
     var selectedFilter: FilterType
     var brightness: Double
@@ -30,6 +36,14 @@ struct EditorState: Equatable {
     var shadowColor: Color
     var shadowOpacity: Double
     
+    // ADDED: UI Transformation State
+    var fgScale: CGFloat
+    var fgOffset: CGSize
+    var bgScale: CGFloat
+    var bgOffset: CGSize
+    var canvasScale: CGFloat
+    var canvasOffset: CGSize
+    
     static func == (lhs: EditorState, rhs: EditorState) -> Bool {
         return lhs.selectedFilter == rhs.selectedFilter &&
             lhs.brightness == rhs.brightness &&
@@ -49,7 +63,13 @@ struct EditorState: Equatable {
             lhs.shadowX == rhs.shadowX &&
             lhs.shadowY == rhs.shadowY &&
             lhs.shadowColor == rhs.shadowColor &&
-            lhs.shadowOpacity == rhs.shadowOpacity
+            lhs.shadowOpacity == rhs.shadowOpacity &&
+            lhs.fgScale == rhs.fgScale &&
+            lhs.fgOffset == rhs.fgOffset &&
+            lhs.bgScale == rhs.bgScale &&
+            lhs.bgOffset == rhs.bgOffset &&
+            lhs.canvasScale == rhs.canvasScale &&
+            lhs.canvasOffset == rhs.canvasOffset
     }
 }
 
@@ -59,6 +79,12 @@ enum ImageFormat {
 }
 
 class EditorViewModel: ObservableObject {
+    private var cancellables = Set<AnyCancellable>()
+    
+    init() {
+        setupAutoSave()
+    }
+    
     @Published var originalImage: UIImage?
     @Published var foregroundImage: UIImage? // The image with background removed
     @Published var backgroundImage: UIImage?
@@ -98,6 +124,20 @@ class EditorViewModel: ObservableObject {
     @Published var shadowY: CGFloat = 0
     @Published var shadowColor: Color = .black
     @Published var shadowOpacity: Double = 0.3
+    
+    // ADDED: UI Transformation State (Moved from ZoomableImageView)
+    @Published var fgScale: CGFloat = 1.0
+    @Published var fgOffset: CGSize = .zero
+    @Published var bgScale: CGFloat = 1.0
+    @Published var bgOffset: CGSize = .zero
+    @Published var canvasScale: CGFloat = 1.0
+    @Published var canvasOffset: CGSize = .zero
+    
+    // ADDED: Project tracking
+    var currentProjectId: UUID? = nil
+    
+    // ADDED: Save Status
+    @Published var saveStatus: SaveStatus = .idle
     
     // Undo/Redo Stacks
     private var undoStack: [EditorState] = []
@@ -161,6 +201,16 @@ class EditorViewModel: ObservableObject {
         self.originalImage = image
         self.foregroundImage = nil
         self.backgroundImage = nil
+        self.currentProjectId = nil // Reset project tracking for new images
+        
+        // Reset transformations
+        self.fgScale = 1.0
+        self.fgOffset = .zero
+        self.bgScale = 1.0
+        self.bgOffset = .zero
+        self.canvasScale = 1.0
+        self.canvasOffset = .zero
+        
         updateProcessedImage()
         removeBackgroundFromCurrent()
         
@@ -189,7 +239,13 @@ class EditorViewModel: ObservableObject {
             shadowX: shadowX,
             shadowY: shadowY,
             shadowColor: shadowColor,
-            shadowOpacity: shadowOpacity
+            shadowOpacity: shadowOpacity,
+            fgScale: fgScale,
+            fgOffset: fgOffset,
+            bgScale: bgScale,
+            bgOffset: bgOffset,
+            canvasScale: canvasScale,
+            canvasOffset: canvasOffset
         )
     }
     
@@ -255,6 +311,13 @@ class EditorViewModel: ObservableObject {
         shadowY = state.shadowY
         shadowColor = state.shadowColor
         shadowOpacity = state.shadowOpacity
+        
+        fgScale = state.fgScale
+        fgOffset = state.fgOffset
+        bgScale = state.bgScale
+        bgOffset = state.bgOffset
+        canvasScale = state.canvasScale
+        canvasOffset = state.canvasOffset
     }
     
     func setBackgroundImage(_ image: UIImage) {
@@ -682,11 +745,171 @@ class EditorViewModel: ObservableObject {
         }
     }
     
-    func saveProject(completion: @escaping (Bool, String) -> Void) {
-        // Mock save logic for now
-        // In a real app, this would persist the EditorState to localized storage
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            completion(true, "Projekt erfolgreich gespeichert")
+    // MARK: - Persistence Helpers
+    
+    private func saveImageToDocuments(_ image: UIImage, name: String) -> String? {
+        guard let data = image.pngData() else { return nil }
+        let filename = name + ".png"
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(filename)
+        
+        do {
+            try data.write(to: url)
+            return filename
+        } catch {
+            print("Error saving image: \(error)")
+            return nil
         }
+    }
+    
+    private func loadImageFromDocuments(_ name: String) -> UIImage? {
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(name)
+        return UIImage(contentsOfFile: url.path)
+    }
+    
+    func saveProject(completion: @escaping (Bool, String) -> Void) {
+        guard let original = originalImage else {
+            completion(false, "Kein Bild zum Speichern")
+            return
+        }
+        
+        saveStatus = .saving
+        
+        let projectId = currentProjectId ?? UUID()
+        let originalName = saveImageToDocuments(original, name: "original_\(projectId.uuidString)")
+        let backgroundName = backgroundImage.flatMap { saveImageToDocuments($0, name: "background_\(projectId.uuidString)") }
+        let foregroundName = foregroundImage.flatMap { saveImageToDocuments($0, name: "foreground_\(projectId.uuidString)") }
+        
+        let state = CodableEditorState(
+            selectedFilter: selectedFilter,
+            brightness: brightness,
+            contrast: contrast,
+            saturation: saturation,
+            blur: blur,
+            rotation: rotation,
+            selectedAspectRatio: selectedAspectRatio,
+            customWidth: customSize?.width,
+            customHeight: customSize?.height,
+            backgroundColorHex: backgroundColor?.hex,
+            gradientColorsHex: gradientColors?.compactMap { $0.hex },
+            backgroundImageName: backgroundName,
+            foregroundImageName: foregroundName,
+            appliedCropRect: appliedCropRect.map { CodableRect($0) },
+            stickers: stickers,
+            textItems: textItems,
+            shadowRadius: shadowRadius,
+            shadowX: shadowX,
+            shadowY: shadowY,
+            shadowColorHex: shadowColor.hex ?? "#000000",
+            shadowOpacity: shadowOpacity,
+            fgScale: fgScale,
+            fgOffset: CodablePoint(CGPoint(x: fgOffset.width, y: fgOffset.height)),
+            bgScale: bgScale,
+            bgOffset: CodablePoint(CGPoint(x: bgOffset.width, y: bgOffset.height)),
+            canvasScale: canvasScale,
+            canvasOffset: CodablePoint(CGPoint(x: canvasOffset.width, y: canvasOffset.height))
+        )
+        
+        // Generate thumbnail
+        let finalImage = self.imageProcessor.processImageWithCrop(
+            original: foregroundImage ?? original,
+            filter: self.selectedFilter,
+            brightness: self.brightness,
+            contrast: self.contrast,
+            saturation: self.saturation,
+            blur: self.blur,
+            rotation: self.rotation,
+            aspectRatio: self.selectedAspectRatio.ratio,
+            customSize: self.customSize,
+            backgroundColor: self.backgroundColor,
+            gradientColors: self.gradientColors,
+            backgroundImage: self.backgroundImage,
+            cropRect: self.appliedCropRect,
+            stickers: self.stickers,
+            textItems: self.textItems,
+            shadowRadius: self.shadowRadius,
+            shadowX: self.shadowX,
+            shadowY: self.shadowY,
+            shadowColor: self.shadowColor,
+            shadowOpacity: self.shadowOpacity
+        ) ?? original
+
+        let project = Project(
+            id: projectId,
+            thumbnail: finalImage,
+            originalImageName: originalName,
+            state: state
+        )
+        
+        self.currentProjectId = projectId
+        ProjectManager.shared.saveProject(project)
+        
+        self.saveStatus = .saved
+        // Return to idle after a few seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+            if self?.saveStatus == .saved {
+                self?.saveStatus = .idle
+            }
+        }
+        
+        completion(true, "Projekt erfolgreich gespeichert")
+    }
+    
+    func loadProject(_ project: Project) {
+        guard let state = project.state, let originalName = project.originalImageName else { return }
+        
+        self.currentProjectId = project.id
+        
+        if let original = loadImageFromDocuments(originalName) {
+            self.isApplyingState = true // Prevent auto-save while loading
+            self.originalImage = original
+            self.foregroundImage = state.foregroundImageName.flatMap { loadImageFromDocuments($0) }
+            
+            self.selectedFilter = state.selectedFilter
+            self.brightness = state.brightness
+            self.contrast = state.contrast
+            self.saturation = state.saturation
+            self.blur = state.blur
+            self.rotation = state.rotation
+            self.selectedAspectRatio = state.selectedAspectRatio
+            
+            if let w = state.customWidth, let h = state.customHeight {
+                self.customSize = CGSize(width: w, height: h)
+            } else {
+                self.customSize = nil
+            }
+            
+            self.backgroundColor = state.backgroundColorHex.map { Color(hex: $0) }
+            self.gradientColors = state.gradientColorsHex?.map { Color(hex: $0) }
+            self.backgroundImage = state.backgroundImageName.flatMap { loadImageFromDocuments($0) }
+            self.appliedCropRect = state.appliedCropRect?.cgRect
+            self.stickers = state.stickers
+            self.textItems = state.textItems
+            self.shadowRadius = state.shadowRadius
+            self.shadowX = state.shadowX
+            self.shadowY = state.shadowY
+            self.shadowColor = Color(hex: state.shadowColorHex)
+            self.shadowOpacity = state.shadowOpacity
+            
+            // Restore transformations
+            self.fgScale = state.fgScale
+            self.fgOffset = CGSize(width: state.fgOffset.x, height: state.fgOffset.y)
+            self.bgScale = state.bgScale
+            self.bgOffset = CGSize(width: state.bgOffset.x, height: state.bgOffset.y)
+            self.canvasScale = state.canvasScale
+            self.canvasOffset = CGSize(width: state.canvasOffset.x, height: state.canvasOffset.y)
+            
+            self.updateAdjustment()
+            self.isApplyingState = false
+        }
+    }
+    
+    private func setupAutoSave() {
+        objectWillChange
+            .debounce(for: .seconds(2), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self = self, self.hasChanges, !self.isApplyingState else { return }
+                self.saveProject { _, _ in }
+            }
+            .store(in: &cancellables)
     }
 }
