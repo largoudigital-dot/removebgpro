@@ -784,7 +784,7 @@ class EditorViewModel: ObservableObject {
         return UIImage(contentsOfFile: url.path)
     }
     
-    func saveProject(completion: @escaping (Bool, String) -> Void) {
+    func saveProject(completion: @escaping (Bool, LocalizedStringKey) -> Void) {
         guard let original = originalImage else {
             completion(false, "Kein Bild zum Speichern")
             return
@@ -795,7 +795,7 @@ class EditorViewModel: ObservableObject {
         let projectId = currentProjectId ?? UUID()
         
         guard let originalName = saveImageToDocuments(original, name: "original_\(projectId.uuidString)") else {
-            completion(false, "Fehler: Originalbild konnte nicht auf Disk gespeichert werden")
+            completion(false, "Speicherfehler: Disk")
             return
         }
         
@@ -878,7 +878,7 @@ class EditorViewModel: ObservableObject {
             }
         }
         
-        completion(true, "Projekt erfolgreich gespeichert")
+        completion(true, "Projekt gespeichert")
     }
     
     func deleteCurrentProject() {
