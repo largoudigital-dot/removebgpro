@@ -116,24 +116,7 @@ struct CanvasTabView: View {
                                 }
                             }
                         }) {
-                            VStack(spacing: 8) {
-                                AspectRatioIcon(ratio: ratio, isSelected: isActuallySelected)
-                                    .scaleEffect(isActuallySelected ? 1.1 : 1.0)
-                                    .animation(AppMotion.bouncy, value: isActuallySelected)
-                                
-                                if !ratio.displayLabel.isEmpty {
-                                    Text(ratio.displayLabel)
-                                        .font(.system(size: 10, weight: isActuallySelected ? .bold : .medium))
-                                }
-                            }
-                            .foregroundColor(isActuallySelected ? .blue : .primary)
-                            .frame(width: 70, height: 75)
-                            .background(isActuallySelected ? Color.blue.opacity(0.1) : Color.primary.opacity(0.05))
-                            .cornerRadius(16)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(isActuallySelected ? Color.blue.opacity(0.2) : Color.clear, lineWidth: 1)
-                            )
+                            RatioItemView(ratio: ratio, isActuallySelected: isActuallySelected)
                         }
                     }
                 }
@@ -160,6 +143,30 @@ struct CanvasTabView: View {
         } message: {
             Text("Geben Sie die gewünschte Breite und Höhe in Pixeln ein.")
         }
+    }
+}
+
+struct RatioItemView: View {
+    let ratio: AspectRatio
+    let isActuallySelected: Bool
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            AspectRatioIcon(ratio: ratio, isSelected: isActuallySelected)
+                .scaleEffect(isActuallySelected ? 1.1 : 1.0)
+                .animation(AppMotion.bouncy, value: isActuallySelected)
+            
+            Text(ratio.displayLabel)
+                .font(.system(size: 10, weight: isActuallySelected ? .bold : .medium))
+        }
+        .foregroundColor(isActuallySelected ? .blue : .primary)
+        .frame(width: 70, height: 75)
+        .background(isActuallySelected ? Color.blue.opacity(0.1) : Color.primary.opacity(0.05))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isActuallySelected ? Color.blue.opacity(0.2) : Color.clear, lineWidth: 1)
+        )
     }
 }
 
