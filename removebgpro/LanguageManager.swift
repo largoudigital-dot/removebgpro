@@ -10,11 +10,57 @@ class LanguageManager: ObservableObject {
         }
     }
     
-    var locale: Locale {
+    // Automatically detect system language on first launch
+    init() {
+        // Only auto-detect if no language has been selected yet
         if selectedLanguage.isEmpty {
-            return Locale.current
+            let systemLang = Locale.preferredLanguages.first ?? "en"
+            let langCode = extractLanguageCode(from: systemLang)
+            
+            // Check if the system language is supported
+            if supportedLanguages.contains(where: { $0.id == langCode }) {
+                selectedLanguage = langCode
+            } else {
+                // Fallback to English if system language is not supported
+                selectedLanguage = "en"
+            }
         }
-        return Locale(identifier: selectedLanguage)
+    }
+    
+    // Extract language code from locale identifier (e.g., "en-US" -> "en", "pt-BR" -> "pt-BR")
+    private func extractLanguageCode(from identifier: String) -> String {
+        // Handle special cases like pt-BR, zh-Hans, zh-Hant
+        if identifier.hasPrefix("pt-BR") || identifier.hasPrefix("pt_BR") {
+            return "pt-BR"
+        } else if identifier.hasPrefix("pt-PT") || identifier.hasPrefix("pt_PT") {
+            return "pt-PT"
+        } else if identifier.hasPrefix("zh-Hans") || identifier.hasPrefix("zh_Hans") {
+            return "zh-Hans"
+        } else if identifier.hasPrefix("zh-Hant") || identifier.hasPrefix("zh_Hant") {
+            return "zh-Hant"
+        } else if identifier.hasPrefix("nb") || identifier.hasPrefix("no") {
+            return "nb"
+        }
+        
+        // For most languages, just take the first component
+        return identifier.components(separatedBy: CharacterSet(charactersIn: "-_")).first ?? "en"
+    }
+    
+    // Get the effective language (with fallback)
+    var effectiveLanguage: String {
+        if selectedLanguage.isEmpty {
+            return "en"
+        }
+        return selectedLanguage
+    }
+    
+    // Check if current language is RTL (Right-to-Left)
+    var isRTL: Bool {
+        ["ar", "he", "fa"].contains(effectiveLanguage)
+    }
+    
+    var locale: Locale {
+        return Locale(identifier: effectiveLanguage)
     }
     
     let supportedLanguages: [LanguageInfo] = [

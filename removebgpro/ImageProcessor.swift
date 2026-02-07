@@ -276,7 +276,12 @@ class ImageProcessor {
                               shadowY: CGFloat = 0,
                               shadowColor: Color = .black,
                               shadowOpacity: Double = 0.3,
-                              shouldIncludeShadow: Bool = true) -> UIImage? {
+                              shouldIncludeShadow: Bool = true,
+                              fgScale: CGFloat = 1.0,
+                              fgOffset: CGSize = .zero,
+                              bgScale: CGFloat = 1.0,
+                              bgOffset: CGSize = .zero,
+                              uiCanvasSize: CGSize? = nil) -> UIImage? {
         var processedImage = original
         
         // 0. Apply normalized crop rect if provided (Free Crop)
@@ -332,18 +337,33 @@ class ImageProcessor {
         
         if shouldIncludeShadow {
             if let background = backgroundImage {
-                processedImage = composite(foreground: finalForeground, background: background, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity) ?? finalForeground
+                processedImage = composite(foreground: finalForeground, background: background, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize) ?? finalForeground
             } else if let colors = gradientColors {
                 if let gradientBg = self.createGradientImage(colors: colors, size: finalForeground.size) {
-                    processedImage = composite(foreground: finalForeground, background: gradientBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity) ?? finalForeground
+                    processedImage = composite(foreground: finalForeground, background: gradientBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize) ?? finalForeground
                 }
             } else if let color = backgroundColor {
                 if let colorBg = self.createColorImage(color: color, size: finalForeground.size) {
-                    processedImage = composite(foreground: finalForeground, background: colorBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity) ?? finalForeground
+                    processedImage = composite(foreground: finalForeground, background: colorBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize) ?? finalForeground
                 }
             } else {
-                // No background - just use the foreground for now
-                processedImage = finalForeground
+                // No background - just use the foreground (but still apply transforms if needed? No, single layer is usually static or handled via crop?)
+                // Actually, single layer foreground DOES respond to gestures in ZoomableImageView activeLayer=.foreground
+                // So we should apply transforms even without background!
+                // But current architecture applies transforms IN composite.
+                // We should probably generalize this.
+                // For now, let's treat "No background" as "Transparent Background" comp if transforms are non-identity.
+                
+                if fgScale != 1.0 || fgOffset != .zero {
+                    // Create empty background to drive composite logic
+                     if let emptyBg = self.createColorImage(color: .clear, size: finalForeground.size) {
+                        processedImage = composite(foreground: finalForeground, background: emptyBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize) ?? finalForeground
+                    } else {
+                        processedImage = finalForeground
+                    }
+                } else {
+                     processedImage = finalForeground
+                }
             }
         } else {
             // Skip shadow baking (used for stable live preview)
@@ -500,29 +520,55 @@ class ImageProcessor {
         }
     }
     
-    private func composite(foreground: UIImage, background: UIImage, shadowRadius: CGFloat = 0, shadowX: CGFloat = 0, shadowY: CGFloat = 0, shadowColor: Color = .black, shadowOpacity: Double = 0.3) -> UIImage? {
+    private func composite(foreground: UIImage, background: UIImage, shadowRadius: CGFloat = 0, shadowX: CGFloat = 0, shadowY: CGFloat = 0, shadowColor: Color = .black, shadowOpacity: Double = 0.3, fgScale: CGFloat = 1.0, fgOffset: CGSize = .zero, bgScale: CGFloat = 1.0, bgOffset: CGSize = .zero, uiCanvasSize: CGSize? = nil) -> UIImage? {
         let size = foreground.size
         UIGraphicsBeginImageContextWithOptions(size, false, foreground.scale)
         let context = UIGraphicsGetCurrentContext()
         
-        // Calculate aspect fill (cover) scale
+        // Calculate Pixel Scale (Mapping UI points to Image pixels)
+        let pixelScale: CGFloat
+        if let uiSize = uiCanvasSize, uiSize.width > 0 {
+            pixelScale = size.width / uiSize.width
+        } else {
+            pixelScale = 1.0 // Fallback if no UI size captured
+        }
+        
+        // --- 1. Draw Background ---
+        context?.saveGState()
+        
+        // Calculate aspect fill (cover) scale for background BASE
         let widthRatio = size.width / background.size.width
         let heightRatio = size.height / background.size.height
-        let scale = max(widthRatio, heightRatio)
+        let baseScale = max(widthRatio, heightRatio)
         
-        let newWidth = background.size.width * scale
-        let newHeight = background.size.height * scale
+        let newWidth = background.size.width * baseScale
+        let newHeight = background.size.height * baseScale
         
-        // Center the background
-        let x = (size.width - newWidth) / 2
-        let y = (size.height - newHeight) / 2
+        // Center the background base rect
+        let bgX = (size.width - newWidth) / 2
+        let bgY = (size.height - newHeight) / 2
         
-        let bgRect = CGRect(x: x, y: y, width: newWidth, height: newHeight)
+        // Apply Background User Transforms (bgScale, bgOffset)
+        // Center of canvas
+        let centerX = size.width / 2
+        let centerY = size.height / 2
         
-        // Draw background with cover logic
+        let bgTranslateX = bgOffset.width * pixelScale
+        let bgTranslateY = bgOffset.height * pixelScale
+        
+        context?.translateBy(x: centerX + bgTranslateX, y: centerY + bgTranslateY)
+        context?.scaleBy(x: bgScale, y: bgScale)
+        context?.translateBy(x: -centerX, y: -centerY)
+        
+        let bgRect = CGRect(x: bgX, y: bgY, width: newWidth, height: newHeight)
         background.draw(in: bgRect)
         
-        // Apply shadow before drawing foreground
+        context?.restoreGState()
+        
+        // --- 2. Draw Foreground ---
+        context?.saveGState()
+        
+        // Apply Shadow
         if shadowRadius > 0 || shadowX != 0 || shadowY != 0 {
             let scaleFactor = max(size.width, size.height) / 1000.0
             let sRadius = shadowRadius * scaleFactor
@@ -532,8 +578,17 @@ class ImageProcessor {
             context?.setShadow(offset: CGSize(width: sX, height: sY), blur: sRadius, color: UIColor(shadowColor.opacity(shadowOpacity)).cgColor)
         }
         
-        // Draw foreground on top
+        // Apply Foreground User Transforms (fgScale, fgOffset)
+        let fgTranslateX = fgOffset.width * pixelScale
+        let fgTranslateY = fgOffset.height * pixelScale
+        
+        context?.translateBy(x: centerX + fgTranslateX, y: centerY + fgTranslateY)
+        context?.scaleBy(x: fgScale, y: fgScale)
+        context?.translateBy(x: -centerX, y: -centerY)
+        
         foreground.draw(in: CGRect(origin: .zero, size: size))
+        
+        context?.restoreGState()
         
         let result = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()

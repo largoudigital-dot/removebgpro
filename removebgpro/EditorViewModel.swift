@@ -133,6 +133,7 @@ class EditorViewModel: ObservableObject {
     @Published var bgOffset: CGSize = .zero
     @Published var canvasScale: CGFloat = 1.0
     @Published var canvasOffset: CGSize = .zero
+    @Published var uiCanvasSize: CGSize = .zero // ADDED: Capture UI size for WYSIWYG export
     
     // ADDED: Project tracking
     var currentProjectId: UUID? = nil
@@ -583,6 +584,8 @@ class EditorViewModel: ObservableObject {
     }
     
     func saveToGallery(format: ImageFormat = .png, completion: @escaping (Bool, LocalizedStringKey) -> Void) {
+        // Fallback to original if foreground is missing, ensuring we always have something to save
+        // This addresses "should save what is in photo editor area if empty"
         guard let foreground = foregroundImage ?? originalImage else {
             completion(false, "Kein Bild zum Speichern")
             return
@@ -609,24 +612,46 @@ class EditorViewModel: ObservableObject {
             shadowX: self.shadowX,
             shadowY: self.shadowY,
             shadowColor: self.shadowColor,
-            shadowOpacity: self.shadowOpacity
+            shadowOpacity: self.shadowOpacity,
+            fgScale: self.fgScale,
+            fgOffset: self.fgOffset,
+            bgScale: self.bgScale,
+            bgOffset: self.bgOffset,
+            uiCanvasSize: self.uiCanvasSize
         ) ?? foreground
 
+        print("💾 Saving High-Res Image: \(finalImage.size) points @ \(finalImage.scale)x scale = \(finalImage.size.width * finalImage.scale)x\(finalImage.size.height * finalImage.scale) pixels")
         let data: Data?
+        let fileExtension: String
+        
         switch format {
         case .png:
             data = finalImage.pngData()
+            fileExtension = "png"
         case .jpg:
             data = finalImage.jpegData(compressionQuality: 0.8)
+            fileExtension = "jpg"
         }
         
-        guard let finalData = data, let finalImage = UIImage(data: finalData) else {
+        guard let finalData = data else {
             completion(false, "Fehler bei der Bildverarbeitung")
             return
         }
         
+        // Save to temporary file first to enforce format/transparency
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileName = "saved_image_\(UUID().uuidString).\(fileExtension)"
+        let fileURL = tempDir.appendingPathComponent(fileName)
+        
+        do {
+            try finalData.write(to: fileURL)
+        } catch {
+            completion(false, "Dateifehler beim Speichern")
+            return
+        }
+        
         PHPhotoLibrary.requestAuthorization { status in
-            guard status == .authorized else {
+            guard status == .authorized || status == .limited else {
                 DispatchQueue.main.async {
                     completion(false, "Keine Berechtigung für Fotobibliothek")
                 }
@@ -634,16 +659,21 @@ class EditorViewModel: ObservableObject {
             }
             
             PHPhotoLibrary.shared().performChanges({
-                PHAssetChangeRequest.creationRequestForAsset(from: finalImage)
-            }) { success, error in
+                // Request creating asset from the FILE, not the UIImage, to preserve exact format (PNG transparency)
+                PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: fileURL)
+            }, completionHandler: { success, error in
+                // Cleanup temp file
+                try? FileManager.default.removeItem(at: fileURL)
+                
                 DispatchQueue.main.async {
                     if success {
                         completion(true, "Foto gespeichert")
                     } else {
+                        print("Save error: \(String(describing: error))")
                         completion(false, "Fehler beim Speichern")
                     }
                 }
-            }
+            })
         }
     }
     
@@ -670,7 +700,12 @@ class EditorViewModel: ObservableObject {
             shadowX: self.shadowX,
             shadowY: self.shadowY,
             shadowColor: self.shadowColor,
-            shadowOpacity: self.shadowOpacity
+            shadowOpacity: self.shadowOpacity,
+            fgScale: self.fgScale,
+            fgOffset: self.fgOffset,
+            bgScale: self.bgScale,
+            bgOffset: self.bgOffset,
+            uiCanvasSize: self.uiCanvasSize
         ) ?? foreground
         
         // Use PNG if there's transparency, JPG otherwise for sharing
@@ -716,7 +751,12 @@ class EditorViewModel: ObservableObject {
             shadowX: self.shadowX,
             shadowY: self.shadowY,
             shadowColor: self.shadowColor,
-            shadowOpacity: self.shadowOpacity
+            shadowOpacity: self.shadowOpacity,
+            fgScale: self.fgScale,
+            fgOffset: self.fgOffset,
+            bgScale: self.bgScale,
+            bgOffset: self.bgOffset,
+            uiCanvasSize: self.uiCanvasSize
         ) ?? foreground
         
         if let stickerImage = imageProcessor.generateStickerImage(from: compositeImage, targetSize: self.stickerSize) {
@@ -854,7 +894,12 @@ class EditorViewModel: ObservableObject {
             shadowX: self.shadowX,
             shadowY: self.shadowY,
             shadowColor: self.shadowColor,
-            shadowOpacity: self.shadowOpacity
+            shadowOpacity: self.shadowOpacity,
+            fgScale: self.fgScale,
+            fgOffset: self.fgOffset,
+            bgScale: self.bgScale,
+            bgOffset: self.bgOffset,
+            uiCanvasSize: self.uiCanvasSize
         ) ?? original
 
         let project = Project(

@@ -54,7 +54,7 @@ struct ColorsTabView: View {
                                     .frame(width: 28, height: 28)
                                     .foregroundColor(.primary)
                                 
-                                Text(tab.rawValue)
+                                Text(tab.localizedName)
                                     .font(.system(size: 11, weight: .medium))
                                     .foregroundColor(.primary.opacity(0.8))
                             }

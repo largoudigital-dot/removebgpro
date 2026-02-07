@@ -313,7 +313,11 @@ struct EditorView: View {
                             if success { AppHaptics.success() }
                         }
                     }) {
-                        Label("Als PNG speichern\(viewModel.isBackgroundTransparent ? " (Empfohlen)" : "")", systemImage: "doc.richtext")
+                        Label {
+                            Text("Als PNG speichern") + (viewModel.isBackgroundTransparent ? (Text(" (") + Text("Empfohlen") + Text(")")) : Text(""))
+                        } icon: {
+                            Image(systemName: "doc.richtext")
+                        }
                     }
                     
                     InteractiveButton(haptic: false, action: {
@@ -323,7 +327,11 @@ struct EditorView: View {
                             if success { AppHaptics.success() }
                         }
                     }) {
-                        Label("Als JPG speichern\(!viewModel.isBackgroundTransparent ? " (Empfohlen)" : "")", systemImage: "photo")
+                        Label {
+                            Text("Als JPG speichern") + (!viewModel.isBackgroundTransparent ? (Text(" (") + Text("Empfohlen") + Text(")")) : Text(""))
+                        } icon: {
+                            Image(systemName: "photo")
+                        }
                     }
                     
 
@@ -453,6 +461,9 @@ struct EditorView: View {
                 .frame(width: fitSize.width, height: fitSize.height)
                 .background(Color(white: 0.95))
                 .clipped()
+                .onChange(of: fitSize) { newSize in
+                    viewModel.uiCanvasSize = newSize
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(alignment: .bottom) {

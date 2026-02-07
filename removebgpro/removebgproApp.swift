@@ -15,6 +15,7 @@ struct removebgproApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.locale, languageManager.locale)
+                .environment(\.layoutDirection, languageManager.isRTL ? .rightToLeft : .leftToRight)
                 .id(languageManager.selectedLanguage)
         }
     }

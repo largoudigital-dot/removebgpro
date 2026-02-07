@@ -62,25 +62,27 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingLanguagePicker) {
             LanguagePickerView()
+                .environment(\.locale, LanguageManager.shared.locale)
         }
     }
 }
 
 struct SettingsGroup<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     let content: Content
     
-    init(title: String, @ViewBuilder content: () -> Content) {
+    init(title: LocalizedStringKey, @ViewBuilder content: () -> Content) {
         self.title = title
         self.content = content()
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title.uppercased())
+            Text(title)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.white.opacity(0.4))
                 .padding(.leading, 8)
+                .textCase(.uppercase)
             
             VStack(spacing: 0) {
                 content
@@ -97,7 +99,7 @@ struct SettingsGroup<Content: View>: View {
 
 struct SettingsRow: View {
     let icon: String
-    let title: String
+    let title: LocalizedStringKey
     let color: Color
     var showChevron: Bool = true
     
