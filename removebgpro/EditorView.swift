@@ -696,11 +696,8 @@ struct StickerExportTabView: View {
     }
     
     var body: some View {
-        HStack(spacing: 20) {
-            // Setup (Size + Color) centered
-            Spacer()
-            
-            HStack(spacing: 8) {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
                 sizeButton(size: 512, label: "512*512 px")
                 sizeButton(size: 96, label: "96*96 px")
                 sizeButton(size: 21, label: "21*21 px")
@@ -724,10 +721,11 @@ struct StickerExportTabView: View {
                 }
                 .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
             }
-            
-            Spacer()
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
+            .scrollDiscoveryNudge()
         }
-        .padding(.horizontal, 8)
+        .fadedEdge(leading: false, trailing: true)
         .sheet(item: $shareSheetItem) { item in
             ShareSheet(activityItems: [item.image])
         }
