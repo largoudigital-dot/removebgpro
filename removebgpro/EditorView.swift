@@ -696,8 +696,10 @@ struct StickerExportTabView: View {
     }
     
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+        HStack(spacing: 8) {
+            Spacer()
+            
+            HStack(spacing: 6) {
                 sizeButton(size: 512, label: "512*512 px")
                 sizeButton(size: 96, label: "96*96 px")
                 sizeButton(size: 21, label: "21*21 px")
@@ -706,26 +708,26 @@ struct StickerExportTabView: View {
                 ZStack {
                     Circle()
                         .fill(AngularGradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red], center: .center))
-                        .frame(width: 40, height: 40)
+                        .frame(width: 36, height: 36)
                     
                     Circle()
-                        .stroke(Color.white, lineWidth: 2)
-                        .frame(width: 40, height: 40)
+                        .stroke(Color.white, lineWidth: 1.5)
+                        .frame(width: 36, height: 36)
                     
                     ColorPicker("", selection: $viewModel.stickerOutlineColor)
                         .labelsHidden()
-                        .frame(width: 40, height: 40)
+                        .frame(width: 36, height: 36)
                         .scaleEffect(3.0)
                         .clipped()
                         .opacity(0.05)
                 }
                 .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 8)
-            .scrollDiscoveryNudge()
+            
+            Spacer()
         }
-        .fadedEdge(leading: false, trailing: true)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
         .sheet(item: $shareSheetItem) { item in
             ShareSheet(activityItems: [item.image])
         }
@@ -738,9 +740,9 @@ struct StickerExportTabView: View {
             AppHaptics.light()
         }) {
             Text(label)
-                .font(.system(size: 13, weight: .bold)) // Slightly smaller font to fit px comfortably
+                .font(.system(size: 11, weight: .bold)) // Compact font for single-screen fit
                 .foregroundColor(viewModel.stickerSize == size ? .white : .primary)
-                .frame(width: 95, height: 44)
+                .frame(width: 76, height: 44)
                 .background(
                     ZStack {
                         if viewModel.stickerSize == size {
