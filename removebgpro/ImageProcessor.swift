@@ -11,6 +11,37 @@ import CoreImage.CIFilterBuiltins
 import SwiftUI
 import Combine
 
+struct ProcessingParameters: Equatable {
+    var filter: FilterType = .none
+    var brightness: Double = 1.0
+    var contrast: Double = 1.0
+    var saturation: Double = 1.0
+    var blur: Double = 0.0
+    var rotation: CGFloat = 0.0
+    var aspectRatio: CGFloat? = nil
+    var customSize: CGSize? = nil
+    var backgroundColor: Color? = nil
+    var gradientColors: [Color]? = nil
+    var backgroundImage: UIImage? = nil
+    var cropRect: CGRect? = nil
+    var stickers: [Sticker] = []
+    var textItems: [TextItem] = []
+    var shadowRadius: CGFloat = 0
+    var shadowX: CGFloat = 0
+    var shadowY: CGFloat = 0
+    var shadowColor: Color = .black
+    var shadowOpacity: Double = 0.3
+    var shouldIncludeShadow: Bool = true
+    var fgScale: CGFloat = 1.0
+    var fgOffset: CGSize = .zero
+    var bgScale: CGFloat = 1.0
+    var bgOffset: CGSize = .zero
+    var uiCanvasSize: CGSize? = nil
+    var referenceSize: CGSize? = nil
+    var outlineWidth: CGFloat = 0
+    var outlineColor: Color = .white
+}
+
 enum EffectType: String, CaseIterable, Identifiable {
     case none = "Original"
     case vignette = "Vignette"
@@ -256,33 +287,65 @@ class ImageProcessor {
         
         return processedImage
     }
-    func processImageWithCrop(original: UIImage,
-                              filter: FilterType,
-                              brightness: Double,
-                              contrast: Double,
-                              saturation: Double,
-                              blur: Double,
-                              rotation: CGFloat,
-                              aspectRatio: CGFloat?,
-                              customSize: CGSize?,
-                              backgroundColor: Color?,
-                              gradientColors: [Color]?,
-                              backgroundImage: UIImage?,
-                              cropRect: CGRect? = nil,
-                              stickers: [Sticker] = [],
-                              textItems: [TextItem] = [],
-                              shadowRadius: CGFloat = 0,
-                              shadowX: CGFloat = 0,
-                              shadowY: CGFloat = 0,
-                              shadowColor: Color = .black,
-                              shadowOpacity: Double = 0.3,
-                              shouldIncludeShadow: Bool = true,
-                              fgScale: CGFloat = 1.0,
-                              fgOffset: CGSize = .zero,
-                              bgScale: CGFloat = 1.0,
-                              bgOffset: CGSize = .zero,
-                              uiCanvasSize: CGSize? = nil) -> UIImage? {
+    func processImageWithCrop(original: UIImage, params: ProcessingParameters) -> UIImage? {
+        let filter = params.filter
+        let brightness = params.brightness
+        let contrast = params.contrast
+        let saturation = params.saturation
+        let blur = params.blur
+        let rotation = params.rotation
+        let aspectRatio = params.aspectRatio
+        let customSize = params.customSize
+        let backgroundColor = params.backgroundColor
+        let gradientColors = params.gradientColors
+        let backgroundImage = params.backgroundImage
+        let cropRect = params.cropRect
+        let stickers = params.stickers
+        let textItems = params.textItems
+        let shadowRadius = params.shadowRadius
+        let shadowX = params.shadowX
+        let shadowY = params.shadowY
+        let shadowColor = params.shadowColor
+        let shadowOpacity = params.shadowOpacity
+        let shouldIncludeShadow = params.shouldIncludeShadow
+        let fgScale = params.fgScale
+        let fgOffset = params.fgOffset
+        let bgScale = params.bgScale
+        let bgOffset = params.bgOffset
+        let uiCanvasSize = params.uiCanvasSize
+        let referenceSize = params.referenceSize
+        let outlineWidth = params.outlineWidth
+        let outlineColor = params.outlineColor
         var processedImage = original
+        
+        // Calculate Virtual Canvas Size (Target Output Size)
+        // If referenceSize is provided (Original Image Size), use it as the base.
+        // Otherwise fallback to the processedImage size (which might be small if coming from BG removal).
+        var virtualSize = referenceSize ?? processedImage.size
+        
+        // Adjust virtualSize based on crop/aspect ratio settings to determine the final canvas size
+        if let rect = cropRect {
+             virtualSize = CGSize(width: virtualSize.width * rect.width, height: virtualSize.height * rect.height)
+        } else if let ratio = aspectRatio {
+             // Calculate aspect fit/fill logic for virtual size?
+             // Actually, if we crop to ratio, the output size depends on how cropImage works.
+             // cropImage keeps the largest dimension that fits the ratio.
+             let currentRatio = virtualSize.width / virtualSize.height
+             if currentRatio > ratio {
+                 virtualSize = CGSize(width: virtualSize.height * ratio, height: virtualSize.height)
+             } else {
+                 virtualSize = CGSize(width: virtualSize.width, height: virtualSize.width / ratio)
+             }
+        } else if let size = customSize {
+             // Same logic as aspect ratio
+             let ratio = size.width / size.height
+             let currentRatio = virtualSize.width / virtualSize.height
+             if currentRatio > ratio {
+                 virtualSize = CGSize(width: virtualSize.height * ratio, height: virtualSize.height)
+             } else {
+                virtualSize = CGSize(width: virtualSize.width, height: virtualSize.width / ratio)
+             }
+        }
         
         // 0. Apply normalized crop rect if provided (Free Crop)
         if let rect = cropRect {
@@ -337,27 +400,21 @@ class ImageProcessor {
         
         if shouldIncludeShadow {
             if let background = backgroundImage {
-                processedImage = composite(foreground: finalForeground, background: background, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize) ?? finalForeground
+                processedImage = composite(foreground: finalForeground, background: background, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize, outputSize: virtualSize, outlineWidth: outlineWidth, outlineColor: outlineColor) ?? finalForeground
             } else if let colors = gradientColors {
-                if let gradientBg = self.createGradientImage(colors: colors, size: finalForeground.size) {
-                    processedImage = composite(foreground: finalForeground, background: gradientBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize) ?? finalForeground
+                if let gradientBg = self.createGradientImage(colors: colors, size: virtualSize) {
+                    processedImage = composite(foreground: finalForeground, background: gradientBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize, outputSize: virtualSize, outlineWidth: outlineWidth, outlineColor: outlineColor) ?? finalForeground
                 }
             } else if let color = backgroundColor {
-                if let colorBg = self.createColorImage(color: color, size: finalForeground.size) {
-                    processedImage = composite(foreground: finalForeground, background: colorBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize) ?? finalForeground
+                if let colorBg = self.createColorImage(color: color, size: virtualSize) {
+                    processedImage = composite(foreground: finalForeground, background: colorBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize, outputSize: virtualSize, outlineWidth: outlineWidth, outlineColor: outlineColor) ?? finalForeground
                 }
             } else {
-                // No background - just use the foreground (but still apply transforms if needed? No, single layer is usually static or handled via crop?)
-                // Actually, single layer foreground DOES respond to gestures in ZoomableImageView activeLayer=.foreground
-                // So we should apply transforms even without background!
-                // But current architecture applies transforms IN composite.
-                // We should probably generalize this.
-                // For now, let's treat "No background" as "Transparent Background" comp if transforms are non-identity.
-                
-                if fgScale != 1.0 || fgOffset != .zero {
-                    // Create empty background to drive composite logic
-                     if let emptyBg = self.createColorImage(color: .clear, size: finalForeground.size) {
-                        processedImage = composite(foreground: finalForeground, background: emptyBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize) ?? finalForeground
+                // No background - just use the foreground (but still apply transforms if needed, using virtualSize context)
+                if fgScale != 1.0 || fgOffset != .zero || referenceSize != nil {
+                    // Create empty background to drive composite logic with specific outputSize
+                     if let emptyBg = self.createColorImage(color: .clear, size: virtualSize) {
+                        processedImage = composite(foreground: finalForeground, background: emptyBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize, outputSize: virtualSize, outlineWidth: outlineWidth, outlineColor: outlineColor) ?? finalForeground
                     } else {
                         processedImage = finalForeground
                     }
@@ -520,8 +577,8 @@ class ImageProcessor {
         }
     }
     
-    private func composite(foreground: UIImage, background: UIImage, shadowRadius: CGFloat = 0, shadowX: CGFloat = 0, shadowY: CGFloat = 0, shadowColor: Color = .black, shadowOpacity: Double = 0.3, fgScale: CGFloat = 1.0, fgOffset: CGSize = .zero, bgScale: CGFloat = 1.0, bgOffset: CGSize = .zero, uiCanvasSize: CGSize? = nil) -> UIImage? {
-        let size = foreground.size
+    private func composite(foreground: UIImage, background: UIImage, shadowRadius: CGFloat = 0, shadowX: CGFloat = 0, shadowY: CGFloat = 0, shadowColor: Color = .black, shadowOpacity: Double = 0.3, fgScale: CGFloat = 1.0, fgOffset: CGSize = .zero, bgScale: CGFloat = 1.0, bgOffset: CGSize = .zero, uiCanvasSize: CGSize? = nil, outputSize: CGSize? = nil, outlineWidth: CGFloat = 0, outlineColor: Color = .white) -> UIImage? {
+        let size = outputSize ?? foreground.size
         UIGraphicsBeginImageContextWithOptions(size, false, foreground.scale)
         let context = UIGraphicsGetCurrentContext()
         
@@ -586,7 +643,36 @@ class ImageProcessor {
         context?.scaleBy(x: fgScale, y: fgScale)
         context?.translateBy(x: -centerX, y: -centerY)
         
-        foreground.draw(in: CGRect(origin: .zero, size: size))
+        // Match Foreground to Canvas (if size differ)
+        // If foreground is smaller than canvas (e.g. low res removal), we need to aspect fit it?
+        // Or render it at center?
+        // Usually, foreground should "fill" the canvas concept.
+        // If we just draw(in: CGRect(origin: .zero, size: size)), it stretches!
+        // We want to MAINTAIN ASPECT RATIO of foreground.
+        // Wait, 'size' IS the target canvas size.
+        // If we are composing, we generally expect the foreground to be the "Main Image".
+        // If the Main Image (foreground) is 500x500 and Canvas is 1000x1000 (virtualSize),
+        // we should probably scale foreground up to fit 1000x1000?
+        // Yes, that's the whole point of "High Res Canvas".
+        // But what if aspect ratios differ?
+        // virtualSize is derived FROM referenceSize (Original Image).
+        // foreground is PROCESSED image (derived from Original too).
+        // So they SHOULD have same aspect ratio (unless cropped?).
+        // If cropped, virtualSize logic above handles it.
+        // Match Foreground to Canvas (if size differ)
+        let fgRect = CGRect(origin: .zero, size: size)
+        
+        let imageToDraw: UIImage
+        if outlineWidth > 0 {
+            // Apply outline relative to the 512px baseline as requested: 
+            // "8px at 512x512, scaled proportionally"
+            let proportionalWidth = outlineWidth * (size.width / 512.0)
+            imageToDraw = applyOutline(to: foreground, width: proportionalWidth, color: outlineColor) ?? foreground
+        } else {
+            imageToDraw = foreground
+        }
+        
+        imageToDraw.draw(in: fgRect)
         
         context?.restoreGState()
         
@@ -726,5 +812,69 @@ class ImageProcessor {
             // Draw image with high quality
             image.draw(in: CGRect(x: x, y: y, width: newWidth, height: newHeight))
         }
+    }
+    
+    // MARK: - Outline Effect
+    func applyOutline(to image: UIImage, width: CGFloat, color: Color) -> UIImage? {
+        guard let ciImage = CIImage(image: image) else { return nil }
+        
+        // 1. Create a mask from the alpha channel
+        guard let maskFilter = CIFilter(name: "CIColorMatrix") else { return nil }
+        maskFilter.setValue(ciImage, forKey: kCIInputImageKey)
+        maskFilter.setValue(CIVector(x: 0, y: 0, z: 0, w: 1), forKey: "inputRVector")
+        maskFilter.setValue(CIVector(x: 0, y: 0, z: 0, w: 1), forKey: "inputGVector")
+        maskFilter.setValue(CIVector(x: 0, y: 0, z: 0, w: 1), forKey: "inputBVector")
+        maskFilter.setValue(CIVector(x: 0, y: 0, z: 0, w: 1), forKey: "inputAVector")
+        
+        guard let mask = maskFilter.outputImage else { return nil }
+        
+        // 2. Expand mask using morphology
+        guard let morphology = CIFilter(name: "CIMorphologyMaximum") else { return nil }
+        morphology.setValue(mask, forKey: kCIInputImageKey)
+        morphology.setValue(Float(width), forKey: kCIInputRadiusKey)
+        
+        guard let expandedMask = morphology.outputImage else { return nil }
+        
+        // 2b. Smooth the expanded mask for cleaner edges
+        let smoothingFilter = CIFilter.gaussianBlur()
+        smoothingFilter.inputImage = expandedMask
+        smoothingFilter.radius = 1.0 // Subtle smoothing
+        
+        guard let smoothedMask = smoothingFilter.outputImage else { return nil }
+        
+        // 2c. Sharpen the mask back into a hard (but smooth) edge using ColorMatrix
+        // We want to ramp any non-zero alpha back to 1.0 quickly
+        let rampFilter = CIFilter(name: "CIColorMatrix")!
+        rampFilter.setValue(smoothedMask, forKey: kCIInputImageKey)
+        // Adjust alpha vector to create a sharp cutoff: (alpha - 0.5) * highValue + 0.5
+        // This makes 0.5 precisely the edge, and sharpens transitions.
+        rampFilter.setValue(CIVector(x: 0, y: 0, z: 0, w: 10), forKey: "inputAVector")
+        rampFilter.setValue(CIVector(x: 0, y: 0, z: 0, w: -4.5), forKey: "inputBiasVector")
+        
+        guard let finalMask = rampFilter.outputImage?.cropped(to: expandedMask.extent) else { return nil }
+        
+        // 3. Create colored background image
+        guard let colorFilter = CIFilter(name: "CIConstantColorGenerator") else { return nil }
+        colorFilter.setValue(CIColor(color: UIColor(color)), forKey: kCIInputColorKey)
+        
+        guard let coloredImage = colorFilter.outputImage?.cropped(to: finalMask.extent) else { return nil }
+        
+        // 4. Combine: original over (colored background masked by expanded alpha)
+        guard let maskedColored = CIFilter(name: "CISourceInCompositing") else { return nil }
+        maskedColored.setValue(coloredImage, forKey: kCIInputImageKey)
+        maskedColored.setValue(finalMask, forKey: kCIInputBackgroundImageKey)
+        
+        guard let outline = maskedColored.outputImage else { return nil }
+        
+        guard let finalFilter = CIFilter(name: "CISourceOverCompositing") else { return nil }
+        finalFilter.setValue(ciImage, forKey: kCIInputImageKey)
+        finalFilter.setValue(outline, forKey: kCIInputBackgroundImageKey)
+        
+        guard let resultImage = finalFilter.outputImage,
+              let cgImage = context.createCGImage(resultImage, from: resultImage.extent) else {
+            return nil
+        }
+        
+        return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
     }
 }

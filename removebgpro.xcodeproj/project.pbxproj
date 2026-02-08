@@ -587,6 +587,7 @@
 				DEVELOPMENT_TEAM = 324JS7T6K6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "ClearCut";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Wir speichern deine bearbeiteten Fotos in deiner Mediathek.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Wir benötigen Zugriff auf deine Fotos, um sie zu bearbeiten und zu speichern.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -625,6 +626,7 @@
 				DEVELOPMENT_TEAM = 324JS7T6K6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "ClearCut";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Wir speichern deine bearbeiteten Fotos in deiner Mediathek.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Wir benötigen Zugriff auf deine Fotos, um sie zu bearbeiten und zu speichern.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

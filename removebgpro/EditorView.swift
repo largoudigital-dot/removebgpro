@@ -8,33 +8,7 @@
 import SwiftUI
 import Combine
 
-enum EditorTab: String, CaseIterable, Identifiable {
-    case unsplash, shadow, crop, filter, colors, adjust
-    
-    var id: String { rawValue }
-    
-    var localizedName: LocalizedStringKey {
-        switch self {
-        case .unsplash: return "Hintergrund"
-        case .shadow: return "Schatten"
-        case .crop: return "Zuschneiden"
-        case .filter: return "Filter"
-        case .colors: return "Farben"
-        case .adjust: return "Anpassen"
-        }
-    }
-    
-    var iconName: String {
-        switch self {
-        case .crop: return "crop"
-        case .filter: return "sparkles"
-        case .colors: return "paintpalette.fill"
-        case .adjust: return "slider.horizontal.3"
-        case .shadow: return "circle.lefthalf.striped.horizontal"
-        case .unsplash: return "photo.stack"
-        }
-    }
-}
+
 
 enum ColorPickerTab: String, CaseIterable, Identifiable {
     case presets, gradients, transparent
@@ -60,7 +34,6 @@ enum ColorPickerTab: String, CaseIterable, Identifiable {
 
 struct EditorView: View {
     @StateObject private var viewModel = EditorViewModel()
-    @State private var selectedTab: EditorTab?
     @State private var selectedAdjustmentParameter: AdjustmentParameter? = nil
     @State private var selectedColorPicker: ColorPickerTab? = nil
     @State private var selectedShadowParameter: ShadowParameter? = nil
@@ -181,7 +154,7 @@ struct EditorView: View {
     
     private var bottomBar: some View {
         ZStack {
-            if let tab = selectedTab {
+            if let tab = viewModel.selectedTab {
                 // Detail Bar
                 HStack(spacing: 0) {
                     // Separated Back Button
@@ -194,10 +167,10 @@ struct EditorView: View {
                             } else if let _ = selectedShadowParameter {
                                 selectedShadowParameter = nil
                             } else {
-                                if selectedTab == .crop {
+                                if viewModel.selectedTab == .crop {
                                     viewModel.cancelCropping()
                                 }
-                                selectedTab = nil
+                                viewModel.selectedTab = nil
                             }
                         }
                     }) {
@@ -371,7 +344,11 @@ struct EditorView: View {
             }() ?? viewModel.originalImage
             
             // Determine the target aspect ratio for the CANVAS container
+            let isStickerMode = viewModel.selectedTab == .stickers
             let targetAspectRatio: CGFloat = {
+                if isStickerMode {
+                    return 1.0 // Force square for stickers
+                }
                 if let ratio = viewModel.selectedAspectRatio.ratio {
                     return ratio
                 }
@@ -382,7 +359,7 @@ struct EditorView: View {
             
             let containerAspectRatio = availableWidth / availableHeight
             
-            let fitSize: CGSize = {
+            let baseFitSize: CGSize = {
                 if targetAspectRatio > containerAspectRatio {
                     // Width is limiting
                     return CGSize(width: availableWidth, height: availableWidth / targetAspectRatio)
@@ -392,10 +369,30 @@ struct EditorView: View {
                 }
             }()
             
+            // Apply sticker UI scaling if in sticker mode
+            let fitSize = isStickerMode ? CGSize(width: baseFitSize.width * viewModel.stickerUIScale, height: baseFitSize.height * viewModel.stickerUIScale) : baseFitSize
+            
             ZStack {
                 Color.clear
                 
                 ZStack {
+                    // ADDED: Sticker Container Background
+                    if isStickerMode {
+                        ZStack {
+                            // Checkerboard
+                            Image(systemName: "checkerboard.rectangle")
+                                .resizable()
+                                .foregroundColor(.gray.opacity(0.1))
+                                .background(Color.white)
+                            
+                            // Visual border
+                            RoundedRectangle(cornerRadius: 0)
+                                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                        }
+                        .frame(width: fitSize.width, height: fitSize.height)
+                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                    }
+
                     if let original = viewModel.originalImage {
                         ZoomableImageView(
                             foreground: displayImage, // Show the processed foreground (without background baked in)
@@ -463,6 +460,9 @@ struct EditorView: View {
                 .clipped()
                 .onChange(of: fitSize) { newSize in
                     viewModel.uiCanvasSize = newSize
+                }
+                .onAppear {
+                    viewModel.uiCanvasSize = fitSize
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -621,7 +621,7 @@ struct EditorView: View {
                 ForEach(EditorTab.allCases) { tab in
                     TabButton(
                         tab: tab,
-                        isSelected: selectedTab == tab,
+                        isSelected: viewModel.selectedTab == tab,
                         isActive: isTabActive(tab),
                         action: {
                             viewModel.cancelCropping() // Reset crop mode on tab change
@@ -629,7 +629,10 @@ struct EditorView: View {
                                 if tab == .unsplash {
                                     showingUnsplashPicker = true
                                 } else {
-                                    selectedTab = tab
+                                    viewModel.selectedTab = tab
+                                    if tab == .stickers {
+                                        viewModel.stickerFlowStep = .size
+                                    }
                                 }
                             }
                         }
@@ -653,6 +656,7 @@ struct EditorView: View {
         case .adjust: return viewModel.isAdjustActive
         case .colors: return viewModel.isColorActive
         case .shadow: return viewModel.isShadowActive
+        case .stickers: return viewModel.stickerOutlineWidth > 0
         case .unsplash: return false
         }
     }
@@ -670,6 +674,8 @@ struct EditorView: View {
             ColorsTabView(viewModel: viewModel, selectedPicker: $selectedColorPicker)
         case .shadow:
             ShadowTabView(viewModel: viewModel, selectedParameter: $selectedShadowParameter)
+        case .stickers:
+            StickerExportTabView(viewModel: viewModel)
         case .unsplash:
             EmptyView()
         }
@@ -678,6 +684,82 @@ struct EditorView: View {
 
     
 
+}
+
+struct StickerExportTabView: View {
+    @ObservedObject var viewModel: EditorViewModel
+    @State private var shareSheetItem: ShareItem?
+    
+    struct ShareItem: Identifiable {
+        let id = UUID()
+        let image: UIImage
+    }
+    
+    var body: some View {
+        HStack(spacing: 20) {
+            // Setup (Size + Color) centered
+            Spacer()
+            
+            HStack(spacing: 12) {
+                sizeButton(size: 512, label: "512*512")
+                sizeButton(size: 96, label: "96*96")
+                sizeButton(size: 21, label: "21*21")
+                
+                // Rainbow Color Picker
+                ZStack {
+                    Circle()
+                        .fill(AngularGradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red], center: .center))
+                        .frame(width: 40, height: 40)
+                    
+                    Circle()
+                        .stroke(Color.white, lineWidth: 2)
+                        .frame(width: 40, height: 40)
+                    
+                    ColorPicker("", selection: $viewModel.stickerOutlineColor)
+                        .labelsHidden()
+                        .frame(width: 40, height: 40)
+                        .scaleEffect(3.0)
+                        .clipped()
+                        .opacity(0.05)
+                }
+                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+        .sheet(item: $shareSheetItem) { item in
+            ShareSheet(activityItems: [item.image])
+        }
+    }
+    private func sizeButton(size: CGFloat, label: String) -> some View {
+        InteractiveButton(action: {
+            withAnimation(AppMotion.snappy) {
+                viewModel.stickerSize = size
+            }
+            AppHaptics.light()
+        }) {
+            Text(label)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(viewModel.stickerSize == size ? .white : .primary)
+                .frame(width: 54, height: 44)
+                .background(
+                    ZStack {
+                        if viewModel.stickerSize == size {
+                            LinearGradient(colors: [Color(hex: "#3B82F6"), Color(hex: "#2563EB")], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        } else {
+                            Color.primary.opacity(0.06)
+                        }
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(viewModel.stickerSize == size ? Color.clear : Color.primary.opacity(0.1), lineWidth: 1)
+                )
+                .shadow(color: viewModel.stickerSize == size ? Color.blue.opacity(0.2) : Color.clear, radius: 8, x: 0, y: 4)
+        }
+    }
 }
 
 struct TabButton: View {

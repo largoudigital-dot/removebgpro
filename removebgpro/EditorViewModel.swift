@@ -15,6 +15,40 @@ enum SaveStatus {
     case saved
 }
 
+enum EditorTab: String, CaseIterable, Identifiable {
+    case unsplash, stickers, shadow, crop, filter, colors, adjust
+    
+    var id: String { rawValue }
+    
+    var localizedName: LocalizedStringKey {
+        switch self {
+        case .unsplash: return "Hintergrund"
+        case .stickers: return "Sticker"
+        case .shadow: return "Schatten"
+        case .crop: return "Zuschneiden"
+        case .filter: return "Filter"
+        case .colors: return "Farben"
+        case .adjust: return "Anpassen"
+        }
+    }
+    
+    var iconName: String {
+        switch self {
+        case .crop: return "crop"
+        case .filter: return "sparkles"
+        case .colors: return "paintpalette.fill"
+        case .adjust: return "slider.horizontal.3"
+        case .shadow: return "circle.lefthalf.striped.horizontal"
+        case .unsplash: return "photo.stack"
+        case .stickers: return "face.smiling.fill"
+        }
+    }
+}
+
+enum StickerFlowStep: String, CaseIterable {
+    case size, export
+}
+
 struct EditorState: Equatable {
     var selectedFilter: FilterType
     var brightness: Double
@@ -92,6 +126,15 @@ class EditorViewModel: ObservableObject {
     @Published var processedImage: UIImage?
     @Published var fullProcessedImage: UIImage? // The image with all adjustments but NO CROP
     
+    @Published var selectedTab: EditorTab? = nil {
+        didSet {
+            // Automatically initialize sticker outline when entering sticker mode
+            if selectedTab == .stickers && stickerOutlineWidth == 0 {
+                stickerOutlineWidth = 8
+            }
+        }
+    }
+    
     @Published var selectedFilter: FilterType = .none
     // ... rest of properties
     @Published var brightness: Double = 1.0
@@ -113,6 +156,7 @@ class EditorViewModel: ObservableObject {
     @Published var stickers: [Sticker] = []
     @Published var selectedStickerId: UUID? = nil
     @Published var showingEmojiPicker = false
+    @Published var stickerFlowStep: StickerFlowStep = .size
     
     // Text State
     @Published var textItems: [TextItem] = []
@@ -169,7 +213,40 @@ class EditorViewModel: ObservableObject {
     }
     
     var isShadowActive: Bool {
-        shadowRadius != 0 || shadowX != 0 || shadowY != 0 || shadowOpacity != 0.3 || shadowColor != .black
+        shadowRadius > 0 || shadowX != 0 || shadowY != 0
+    }
+    
+    var currentProcessingParameters: ProcessingParameters {
+        ProcessingParameters(
+            filter: selectedFilter,
+            brightness: brightness,
+            contrast: contrast,
+            saturation: saturation,
+            blur: blur,
+            rotation: rotation,
+            aspectRatio: selectedAspectRatio.ratio,
+            customSize: customSize,
+            backgroundColor: backgroundColor,
+            gradientColors: gradientColors,
+            backgroundImage: backgroundImage,
+            cropRect: appliedCropRect,
+            stickers: stickers,
+            textItems: textItems,
+            shadowRadius: (selectedTab == .stickers) ? 0 : shadowRadius,
+            shadowX: (selectedTab == .stickers) ? 0 : shadowX,
+            shadowY: (selectedTab == .stickers) ? 0 : shadowY,
+            shadowColor: shadowColor,
+            shadowOpacity: (selectedTab == .stickers) ? 0 : shadowOpacity,
+            shouldIncludeShadow: true,
+            fgScale: fgScale,
+            fgOffset: fgOffset,
+            bgScale: bgScale,
+            bgOffset: bgOffset,
+            uiCanvasSize: uiCanvasSize,
+            referenceSize: originalImage?.size,
+            outlineWidth: stickerOutlineWidth,
+            outlineColor: stickerOutlineColor
+        )
     }
     
     var isBackgroundTransparent: Bool {
@@ -201,7 +278,30 @@ class EditorViewModel: ObservableObject {
     
     @Published var showingStickerPreview = false
     @Published var stickerPreviewImage: UIImage? = nil
-    @Published var stickerSize: CGFloat = 512 // Default WhatsApp Sticker size
+    @Published var stickerSize: CGFloat = 0 // No size selected by default
+    @Published var stickerOutlineWidth: CGFloat = 0 {
+        didSet { updateProcessedImage() }
+    }
+    @Published var stickerOutlineColor: Color = .white {
+        didSet {
+            // If user picks a color but width is 0, set a default width so it's visible
+            if stickerOutlineWidth == 0 {
+                stickerOutlineWidth = 8
+            }
+            updateProcessedImage()
+        }
+    }
+    
+    var stickerUIScale: CGFloat {
+        // 512 is our reference "full" size for the UI canvas
+        // 96 is the small size. Let's make it visually distinct but readable.
+        if stickerSize == 21 {
+            return 0.3 // 30% of container size (very small)
+        } else if stickerSize == 96 {
+            return 0.6 // 60% of container size
+        }
+        return 1.0 // 100% of container size
+    }
     
     private let imageProcessor = ImageProcessor()
     private let removalService = BackgroundRemovalService()
@@ -525,54 +625,19 @@ class EditorViewModel: ObservableObject {
             guard let self = self else { return }
             
             // 1. Generate FULL processed image (no crop)
-            let full = self.imageProcessor.processImageWithCrop(
-                original: foreground,
-                filter: self.selectedFilter,
-                brightness: self.brightness,
-                contrast: self.contrast,
-                saturation: self.saturation,
-                blur: self.blur,
-                rotation: self.rotation,
-                aspectRatio: nil, // No aspect ratio crop here
-                customSize: nil,   // No custom size crop here
-                backgroundColor: nil,
-                gradientColors: nil,
-                backgroundImage: nil,
-                cropRect: nil,     // No free crop here
-                stickers: [],
-                textItems: [],
-                shadowRadius: self.shadowRadius,
-                shadowX: self.shadowX,
-                shadowY: self.shadowY,
-                shadowColor: self.shadowColor,
-                shadowOpacity: self.shadowOpacity,
-                shouldIncludeShadow: false
-            )
+            var fullParams = self.currentProcessingParameters
+            fullParams.aspectRatio = nil
+            fullParams.customSize = nil
+            fullParams.cropRect = nil
+            fullParams.shouldIncludeShadow = true // Enable baking (outline/shadow) for preview
+            
+            let full = self.imageProcessor.processImageWithCrop(original: foreground, params: fullParams)
             
             // 2. Generate CROPPED processed image
-            let cropped = self.imageProcessor.processImageWithCrop(
-                original: foreground,
-                filter: self.selectedFilter,
-                brightness: self.brightness,
-                contrast: self.contrast,
-                saturation: self.saturation,
-                blur: self.blur,
-                rotation: self.rotation,
-                aspectRatio: self.selectedAspectRatio.ratio,
-                customSize: self.customSize,
-                backgroundColor: nil,
-                gradientColors: nil,
-                backgroundImage: nil,
-                cropRect: self.appliedCropRect,
-                stickers: [],
-                textItems: self.textItems, // Render text items in preview
-                shadowRadius: self.shadowRadius,
-                shadowX: self.shadowX,
-                shadowY: self.shadowY,
-                shadowColor: self.shadowColor,
-                shadowOpacity: self.shadowOpacity,
-                shouldIncludeShadow: false
-            )
+            var croppedParams = self.currentProcessingParameters
+            croppedParams.shouldIncludeShadow = true // Enable baking (outline/shadow) for preview
+            
+            let cropped = self.imageProcessor.processImageWithCrop(original: foreground, params: croppedParams)
             
             DispatchQueue.main.async {
                 withAnimation(.easeInOut(duration: 0.3)) {
@@ -592,33 +657,10 @@ class EditorViewModel: ObservableObject {
         }
         
         // Generate final image with stickers burned in
-        let finalImage = self.imageProcessor.processImageWithCrop(
-            original: foreground,
-            filter: self.selectedFilter,
-            brightness: self.brightness,
-            contrast: self.contrast,
-            saturation: self.saturation,
-            blur: self.blur,
-            rotation: self.rotation,
-            aspectRatio: self.selectedAspectRatio.ratio,
-            customSize: self.customSize,
-            backgroundColor: self.backgroundColor,
-            gradientColors: self.gradientColors,
-            backgroundImage: self.backgroundImage,
-            cropRect: self.appliedCropRect,
-            stickers: self.stickers, // Burn them in here
-            textItems: self.textItems, // Burn text items in final image
-            shadowRadius: self.shadowRadius,
-            shadowX: self.shadowX,
-            shadowY: self.shadowY,
-            shadowColor: self.shadowColor,
-            shadowOpacity: self.shadowOpacity,
-            fgScale: self.fgScale,
-            fgOffset: self.fgOffset,
-            bgScale: self.bgScale,
-            bgOffset: self.bgOffset,
-            uiCanvasSize: self.uiCanvasSize
-        ) ?? foreground
+        var params = self.currentProcessingParameters
+        params.outlineWidth = 0 // No outline for general save
+        
+        let finalImage = self.imageProcessor.processImageWithCrop(original: foreground, params: params) ?? foreground
 
         print("💾 Saving High-Res Image: \(finalImage.size) points @ \(finalImage.scale)x scale = \(finalImage.size.width * finalImage.scale)x\(finalImage.size.height * finalImage.scale) pixels")
         let data: Data?
@@ -680,33 +722,10 @@ class EditorViewModel: ObservableObject {
     func shareImage() {
         guard let foreground = foregroundImage ?? originalImage else { return }
         
-        let finalImage = self.imageProcessor.processImageWithCrop(
-            original: foreground,
-            filter: self.selectedFilter,
-            brightness: self.brightness,
-            contrast: self.contrast,
-            saturation: self.saturation,
-            blur: self.blur,
-            rotation: self.rotation,
-            aspectRatio: self.selectedAspectRatio.ratio,
-            customSize: self.customSize,
-            backgroundColor: self.backgroundColor,
-            gradientColors: self.gradientColors,
-            backgroundImage: self.backgroundImage,
-            cropRect: self.appliedCropRect,
-            stickers: self.stickers,
-            textItems: self.textItems,
-            shadowRadius: self.shadowRadius,
-            shadowX: self.shadowX,
-            shadowY: self.shadowY,
-            shadowColor: self.shadowColor,
-            shadowOpacity: self.shadowOpacity,
-            fgScale: self.fgScale,
-            fgOffset: self.fgOffset,
-            bgScale: self.bgScale,
-            bgOffset: self.bgOffset,
-            uiCanvasSize: self.uiCanvasSize
-        ) ?? foreground
+        var params = self.currentProcessingParameters
+        params.outlineWidth = 0 // No outline for sharing
+        
+        let finalImage = self.imageProcessor.processImageWithCrop(original: foreground, params: params) ?? foreground
         
         // Use PNG if there's transparency, JPG otherwise for sharing
         let data = isBackgroundTransparent ? finalImage.pngData() : finalImage.jpegData(compressionQuality: 0.8)
@@ -731,33 +750,7 @@ class EditorViewModel: ObservableObject {
     func prepareStickerPreview() {
         guard let foreground = foregroundImage ?? originalImage else { return }
         
-        let compositeImage = self.imageProcessor.processImageWithCrop(
-            original: foreground,
-            filter: self.selectedFilter,
-            brightness: self.brightness,
-            contrast: self.contrast,
-            saturation: self.saturation,
-            blur: self.blur,
-            rotation: self.rotation,
-            aspectRatio: self.selectedAspectRatio.ratio,
-            customSize: self.customSize,
-            backgroundColor: self.backgroundColor,
-            gradientColors: self.gradientColors,
-            backgroundImage: self.backgroundImage,
-            cropRect: self.appliedCropRect,
-            stickers: self.stickers,
-            textItems: self.textItems,
-            shadowRadius: self.shadowRadius,
-            shadowX: self.shadowX,
-            shadowY: self.shadowY,
-            shadowColor: self.shadowColor,
-            shadowOpacity: self.shadowOpacity,
-            fgScale: self.fgScale,
-            fgOffset: self.fgOffset,
-            bgScale: self.bgScale,
-            bgOffset: self.bgOffset,
-            uiCanvasSize: self.uiCanvasSize
-        ) ?? foreground
+        let compositeImage = self.imageProcessor.processImageWithCrop(original: foreground, params: self.currentProcessingParameters) ?? foreground
         
         if let stickerImage = imageProcessor.generateStickerImage(from: compositeImage, targetSize: self.stickerSize) {
             DispatchQueue.main.async {
@@ -870,37 +863,13 @@ class EditorViewModel: ObservableObject {
             bgOffset: CodablePoint(CGPoint(x: bgOffset.width, y: bgOffset.height)),
             canvasScale: canvasScale,
             canvasOffset: CodablePoint(CGPoint(x: canvasOffset.width, y: canvasOffset.height)),
-            version: stateVersion
+            version: stateVersion,
+            stickerOutlineWidth: stickerOutlineWidth,
+            stickerOutlineColorHex: stickerOutlineColor.hex
         )
         
         // Generate thumbnail
-        let finalImage = self.imageProcessor.processImageWithCrop(
-            original: foregroundImage ?? original,
-            filter: self.selectedFilter,
-            brightness: self.brightness,
-            contrast: self.contrast,
-            saturation: self.saturation,
-            blur: self.blur,
-            rotation: self.rotation,
-            aspectRatio: self.selectedAspectRatio.ratio,
-            customSize: self.customSize,
-            backgroundColor: self.backgroundColor,
-            gradientColors: self.gradientColors,
-            backgroundImage: self.backgroundImage,
-            cropRect: self.appliedCropRect,
-            stickers: self.stickers,
-            textItems: self.textItems,
-            shadowRadius: self.shadowRadius,
-            shadowX: self.shadowX,
-            shadowY: self.shadowY,
-            shadowColor: self.shadowColor,
-            shadowOpacity: self.shadowOpacity,
-            fgScale: self.fgScale,
-            fgOffset: self.fgOffset,
-            bgScale: self.bgScale,
-            bgOffset: self.bgOffset,
-            uiCanvasSize: self.uiCanvasSize
-        ) ?? original
+        let finalImage = self.imageProcessor.processImageWithCrop(original: foregroundImage ?? original, params: self.currentProcessingParameters) ?? original
 
         let project = Project(
             id: projectId,
@@ -924,6 +893,66 @@ class EditorViewModel: ObservableObject {
         }
         
         completion(true, "Projekt gespeichert")
+    }
+    
+    func saveAsSticker(completion: @escaping (UIImage?) -> Void) {
+        guard let foreground = foregroundImage ?? originalImage else {
+            completion(nil)
+            return
+        }
+        
+        self.saveStatus = .saving
+        
+        // Create the sticker image
+        // 1. Process the image with the outline and square aspect ratio
+        var stickerParams = self.currentProcessingParameters
+        stickerParams.aspectRatio = 1.0
+        stickerParams.customSize = CGSize(width: stickerSize, height: stickerSize)
+        stickerParams.backgroundColor = nil
+        stickerParams.shadowRadius = 0
+        stickerParams.shadowOpacity = 0
+        stickerParams.shouldIncludeShadow = false
+        stickerParams.bgScale = 1.0
+        stickerParams.bgOffset = .zero
+        stickerParams.referenceSize = CGSize(width: stickerSize, height: stickerSize)
+        
+        let sticker = self.imageProcessor.processImageWithCrop(original: foreground, params: stickerParams) ?? foreground
+        
+        // Save to photo library as PNG
+        guard let data = sticker.pngData() else {
+            completion(nil)
+            self.saveStatus = .idle
+            return
+        }
+        
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".png")
+        
+        do {
+            try data.write(to: tempURL)
+            
+            PHPhotoLibrary.shared().performChanges({
+                PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: tempURL)
+            }) { success, error in
+                DispatchQueue.main.async {
+                    if success {
+                        self.saveStatus = .saved
+                        completion(sticker) // Return the image for sharing
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                            if self.saveStatus == .saved {
+                                self.saveStatus = .idle
+                            }
+                        }
+                    } else {
+                        self.saveStatus = .idle
+                        completion(nil)
+                    }
+                    try? FileManager.default.removeItem(at: tempURL)
+                }
+            }
+        } catch {
+            self.saveStatus = .idle
+            completion(nil)
+        }
     }
     
     func deleteCurrentProject() {
@@ -977,6 +1006,12 @@ class EditorViewModel: ObservableObject {
             self.canvasScale = state.canvasScale
             self.canvasOffset = CGSize(width: state.canvasOffset.x, height: state.canvasOffset.y)
             self.stateVersion = state.version
+            
+            // Restore sticker outline
+            self.stickerOutlineWidth = state.stickerOutlineWidth
+            if let hex = state.stickerOutlineColorHex {
+                self.stickerOutlineColor = Color(hex: hex)
+            }
             
             self.updateAdjustment()
             self.lastSavedState = currentState()
