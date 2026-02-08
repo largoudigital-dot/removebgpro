@@ -700,10 +700,10 @@ struct StickerExportTabView: View {
             // Setup (Size + Color) centered
             Spacer()
             
-            HStack(spacing: 12) {
-                sizeButton(size: 512, label: "512*512")
-                sizeButton(size: 96, label: "96*96")
-                sizeButton(size: 21, label: "21*21")
+            HStack(spacing: 8) {
+                sizeButton(size: 512, label: "512*512 px")
+                sizeButton(size: 96, label: "96*96 px")
+                sizeButton(size: 21, label: "21*21 px")
                 
                 // Rainbow Color Picker
                 ZStack {
@@ -740,9 +740,9 @@ struct StickerExportTabView: View {
             AppHaptics.light()
         }) {
             Text(label)
-                .font(.system(size: 14, weight: .bold))
+                .font(.system(size: 13, weight: .bold)) // Slightly smaller font to fit px comfortably
                 .foregroundColor(viewModel.stickerSize == size ? .white : .primary)
-                .frame(width: 75, height: 44)
+                .frame(width: 95, height: 44)
                 .background(
                     ZStack {
                         if viewModel.stickerSize == size {
