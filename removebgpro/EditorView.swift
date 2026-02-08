@@ -742,7 +742,7 @@ struct StickerExportTabView: View {
             Text(label)
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(viewModel.stickerSize == size ? .white : .primary)
-                .frame(width: 54, height: 44)
+                .frame(width: 75, height: 44)
                 .background(
                     ZStack {
                         if viewModel.stickerSize == size {

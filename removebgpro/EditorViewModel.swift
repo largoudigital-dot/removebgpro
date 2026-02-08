@@ -278,7 +278,7 @@ class EditorViewModel: ObservableObject {
     
     @Published var showingStickerPreview = false
     @Published var stickerPreviewImage: UIImage? = nil
-    @Published var stickerSize: CGFloat = 0 // No size selected by default
+    @Published var stickerSize: CGFloat = 512 // Default to 512x512
     @Published var stickerOutlineWidth: CGFloat = 0 {
         didSet { updateProcessedImage() }
     }
