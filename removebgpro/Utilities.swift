@@ -198,3 +198,169 @@ struct ShareSheet: UIViewControllerRepresentable {
     
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
+
+// MARK: - System Color Picker Wrapper
+struct SystemColorPicker: UIViewControllerRepresentable {
+    @Binding var color: Color
+    @Environment(\.presentationMode) var presentationMode
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    func makeUIViewController(context: Context) -> UIColorPickerViewController {
+        let picker = UIColorPickerViewController()
+        picker.delegate = context.coordinator
+        picker.selectedColor = UIColor(color)
+        picker.supportsAlpha = true
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIColorPickerViewController, context: Context) {
+        // No-op: We don't want to override the picker's state from outside while it's open
+    }
+    
+    class Coordinator: NSObject, UIColorPickerViewControllerDelegate {
+        var parent: SystemColorPicker
+        
+        init(_ parent: SystemColorPicker) {
+            self.parent = parent
+        }
+        
+        func colorPickerViewControllerDidSelectColor(_ viewController: UIColorPickerViewController) {
+            parent.color = Color(viewController.selectedColor)
+        }
+        
+        func colorPickerViewControllerDidFinish(_ viewController: UIColorPickerViewController) {
+            // Dismissal handled by system
+        }
+    }
+}
+
+// MARK: - Custom Spectrum Color Picker
+struct SpectrumColorPickerView: View {
+    @Binding var color: Color
+    @Environment(\.presentationMode) var presentationMode
+    
+    @State private var hue: Double = 0.0
+    @State private var saturation: Double = 1.0
+    @State private var brightness: Double = 1.0
+    
+    init(color: Binding<Color>) {
+        self._color = color
+        // Initialize HSB from the binding color
+        if let components = UIColor(color.wrappedValue).hsba {
+            _hue = State(initialValue: components.hue)
+            _saturation = State(initialValue: components.saturation)
+            _brightness = State(initialValue: components.brightness)
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            // Header
+            HStack {
+                Text("Farbe wählen")
+                    .font(.headline)
+                Spacer()
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.gray)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.top)
+            
+            // Hue & Saturation Spectrum
+            GeometryReader { geometry in
+                ZStack {
+                    // Spectrum Gradient (Hue)
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(hue: 0, saturation: 1, brightness: 1),
+                            Color(hue: 0.1, saturation: 1, brightness: 1),
+                            Color(hue: 0.2, saturation: 1, brightness: 1),
+                            Color(hue: 0.3, saturation: 1, brightness: 1),
+                            Color(hue: 0.4, saturation: 1, brightness: 1),
+                            Color(hue: 0.5, saturation: 1, brightness: 1),
+                            Color(hue: 0.6, saturation: 1, brightness: 1),
+                            Color(hue: 0.7, saturation: 1, brightness: 1),
+                            Color(hue: 0.8, saturation: 1, brightness: 1),
+                            Color(hue: 0.9, saturation: 1, brightness: 1),
+                            Color(hue: 1, saturation: 1, brightness: 1)
+                        ]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    
+                    // Saturation Gradient (White to Transparent)
+                    LinearGradient(
+                        gradient: Gradient(colors: [.white, .white.opacity(0)]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    
+                    // Thumb
+                    Circle()
+                        .stroke(Color.white, lineWidth: 2)
+                        .shadow(radius: 1)
+                        .frame(width: 20, height: 20)
+                        .position(
+                            x: CGFloat(hue) * geometry.size.width,
+                            y: CGFloat(saturation) * geometry.size.height
+                        )
+                }
+                .cornerRadius(12)
+                .drawingGroup()
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            updateColor(at: value.location, in: geometry.size)
+                        }
+                )
+            }
+            .frame(height: 200)
+            .padding(.horizontal)
+            
+            // Brightness Slider
+            HStack {
+                Image(systemName: "sun.min.fill").foregroundColor(.gray)
+                Slider(value: $brightness, in: 0...1)
+                    .accentColor(color)
+                    .onChange(of: brightness) { _ in
+                        updateColorOutput()
+                    }
+                Image(systemName: "sun.max.fill").foregroundColor(.gray)
+            }
+            .padding(.horizontal)
+            
+            Spacer()
+        }
+        .background(Color(UIColor.systemBackground))
+    }
+    
+    private func updateColor(at location: CGPoint, in size: CGSize) {
+        let x = min(max(location.x, 0), size.width)
+        let y = min(max(location.y, 0), size.height)
+        
+        hue = Double(x / size.width)
+        saturation = Double(y / size.height)
+        
+        updateColorOutput()
+    }
+    
+    private func updateColorOutput() {
+        color = Color(hue: hue, saturation: saturation, brightness: brightness)
+    }
+}
+
+extension UIColor {
+    var hsba: (hue: Double, saturation: Double, brightness: Double, alpha: Double)? {
+        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        guard getHue(&h, saturation: &s, brightness: &b, alpha: &a) else { return nil }
+        return (Double(h), Double(s), Double(b), Double(a))
+    }
+}

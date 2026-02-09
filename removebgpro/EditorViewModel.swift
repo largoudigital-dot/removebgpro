@@ -284,11 +284,15 @@ class EditorViewModel: ObservableObject {
     }
     @Published var stickerOutlineColor: Color = .white {
         didSet {
-            // If user picks a color but width is 0, set a default width so it's visible
-            if stickerOutlineWidth == 0 {
-                stickerOutlineWidth = 8
+            // Dispatch to next runloop to prevent "Modifying state during view update" crash
+            // resulting from ColorPicker binding updates triggering other published property changes.
+            DispatchQueue.main.async {
+                // If user picks a color but width is 0, set a default width so it's visible
+                if self.stickerOutlineWidth == 0 {
+                    self.stickerOutlineWidth = 8
+                }
+                self.updateProcessedImage()
             }
-            updateProcessedImage()
         }
     }
     
@@ -617,12 +621,22 @@ class EditorViewModel: ObservableObject {
         updateProcessedImage()
     }
     
+    // ADDED: Task for debouncing image processing
+    private var processingTask: Task<Void, Never>?
+
     private func updateProcessedImage() {
+        // Cancel any pending processing to prevent backlog and memory spikes
+        processingTask?.cancel()
+        
         // Use foreground if available, otherwise original
         guard let foreground = foregroundImage ?? originalImage else { return }
         
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
+        processingTask = Task {
+            // Debounce: Wait a short time to see if another update comes in
+            // This prevents processing every single step of a slider drag
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+            
+            if Task.isCancelled { return }
             
             // 1. Generate FULL processed image (no crop)
             var fullParams = self.currentProcessingParameters
@@ -633,13 +647,17 @@ class EditorViewModel: ObservableObject {
             
             let full = self.imageProcessor.processImageWithCrop(original: foreground, params: fullParams)
             
+            if Task.isCancelled { return }
+            
             // 2. Generate CROPPED processed image
             var croppedParams = self.currentProcessingParameters
             croppedParams.shouldIncludeShadow = true // Enable baking (outline/shadow) for preview
             
             let cropped = self.imageProcessor.processImageWithCrop(original: foreground, params: croppedParams)
             
-            DispatchQueue.main.async {
+            if Task.isCancelled { return }
+            
+            await MainActor.run {
                 withAnimation(.easeInOut(duration: 0.3)) {
                     self.fullProcessedImage = full ?? foreground
                     self.processedImage = cropped ?? foreground

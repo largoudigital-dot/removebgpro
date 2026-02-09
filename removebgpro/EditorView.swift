@@ -287,7 +287,7 @@ struct EditorView: View {
                         }
                     }) {
                         Label {
-                            Text("Als PNG speichern") + (viewModel.isBackgroundTransparent ? (Text(" (") + Text("Empfohlen") + Text(")")) : Text(""))
+                            Text("Als PNG speichern") + (viewModel.isBackgroundTransparent ? (Text(" (") + Text("Sticker") + Text(")")) : Text(""))
                         } icon: {
                             Image(systemName: "doc.richtext")
                         }
@@ -689,6 +689,7 @@ struct EditorView: View {
 struct StickerExportTabView: View {
     @ObservedObject var viewModel: EditorViewModel
     @State private var shareSheetItem: ShareItem?
+    @State private var showingColorPicker = false
     
     struct ShareItem: Identifiable {
         let id = UUID()
@@ -704,24 +705,22 @@ struct StickerExportTabView: View {
                 sizeButton(size: 96, label: "96*96 px")
                 sizeButton(size: 21, label: "21*21 px")
                 
-                // Rainbow Color Picker
-                ZStack {
-                    Circle()
-                        .fill(AngularGradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red], center: .center))
-                        .frame(width: 36, height: 36)
-                    
-                    Circle()
-                        .stroke(Color.white, lineWidth: 1.5)
-                        .frame(width: 36, height: 36)
-                    
-                    ColorPicker("", selection: $viewModel.stickerOutlineColor)
-                        .labelsHidden()
-                        .frame(width: 36, height: 36)
-                        .scaleEffect(3.0)
-                        .clipped()
-                        .opacity(0.05)
+                // System Color Picker Button
+                InteractiveButton(action: {
+                    showingColorPicker = true
+                }) {
+                    ZStack {
+                        // Visual Indicator
+                        Circle()
+                            .fill(AngularGradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red], center: .center))
+                            .frame(width: 44, height: 44)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white, lineWidth: 2)
+                            )
+                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    }
                 }
-                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
             }
             
             Spacer()
@@ -730,6 +729,11 @@ struct StickerExportTabView: View {
         .padding(.vertical, 8)
         .sheet(item: $shareSheetItem) { item in
             ShareSheet(activityItems: [item.image])
+        }
+        .sheet(isPresented: $showingColorPicker) {
+            SpectrumColorPickerView(color: $viewModel.stickerOutlineColor)
+                .presentationDetents([.fraction(0.45), .medium])
+                .presentationDragIndicator(.visible)
         }
     }
     private func sizeButton(size: CGFloat, label: String) -> some View {
