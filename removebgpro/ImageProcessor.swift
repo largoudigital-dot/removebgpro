@@ -832,7 +832,17 @@ class ImageProcessor {
     
     // MARK: - Outline Effect
     func applyOutline(to image: UIImage, width: CGFloat, color: Color) -> UIImage? {
-        guard let ciImage = CIImage(image: image) else { return nil }
+        // Create an expanded canvas to prevent clipping at edges
+        // We need a margin of at least 'width' on all sides.
+        let margin = width * 2
+        let newSize = CGSize(width: image.size.width + margin * 2, height: image.size.height + margin * 2)
+        
+        UIGraphicsBeginImageContextWithOptions(newSize, false, image.scale)
+        image.draw(in: CGRect(x: margin, y: margin, width: image.size.width, height: image.size.height))
+        let paddedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        guard let padded = paddedImage, let ciImage = CIImage(image: padded) else { return nil }
         
         // 1. Create a mask from the alpha channel
         guard let maskFilter = CIFilter(name: "CIColorMatrix") else { return nil }
@@ -859,11 +869,8 @@ class ImageProcessor {
         guard let smoothedMask = smoothingFilter.outputImage else { return nil }
         
         // 2c. Sharpen the mask back into a hard (but smooth) edge using ColorMatrix
-        // We want to ramp any non-zero alpha back to 1.0 quickly
         let rampFilter = CIFilter(name: "CIColorMatrix")!
         rampFilter.setValue(smoothedMask, forKey: kCIInputImageKey)
-        // Adjust alpha vector to create a sharp cutoff: (alpha - 0.5) * highValue + 0.5
-        // This makes 0.5 precisely the edge, and sharpens transitions.
         rampFilter.setValue(CIVector(x: 0, y: 0, z: 0, w: 10), forKey: "inputAVector")
         rampFilter.setValue(CIVector(x: 0, y: 0, z: 0, w: -4.5), forKey: "inputBiasVector")
         
@@ -891,6 +898,6 @@ class ImageProcessor {
             return nil
         }
         
-        return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+        return UIImage(cgImage: cgImage, scale: image.scale, orientation: .up)
     }
 }

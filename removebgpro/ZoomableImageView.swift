@@ -185,7 +185,7 @@ struct ZoomableImageView: View {
                         // without changing the underlying image size or position.
                         .mask(
                             GeometryReader { imageGeo in
-                                if let crop = appliedCropRect, !isCropping {
+                                if let crop = appliedCropRect, !isCropping, foreground == nil {
                                     Rectangle()
                                         .frame(
                                             width: crop.width * imageGeo.size.width,
