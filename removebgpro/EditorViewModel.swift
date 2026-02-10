@@ -135,11 +135,7 @@ class EditorViewModel: ObservableObject {
     
     @Published var selectedTab: EditorTab? = nil {
         didSet {
-            // Automatically initialize sticker outline when entering sticker mode
             if selectedTab == .stickers {
-                if stickerOutlineWidth == 0 {
-                    stickerOutlineWidth = 8
-                }
                 isStickerModeActive = true
             }
         }
@@ -242,11 +238,11 @@ class EditorViewModel: ObservableObject {
             cropRect: appliedCropRect,
             stickers: stickers,
             textItems: textItems,
-            shadowRadius: shadowRadius,
-            shadowX: shadowX,
-            shadowY: shadowY,
+            shadowRadius: (selectedTab == .stickers) ? 0 : shadowRadius,
+            shadowX: (selectedTab == .stickers) ? 0 : shadowX,
+            shadowY: (selectedTab == .stickers) ? 0 : shadowY,
             shadowColor: shadowColor,
-            shadowOpacity: shadowOpacity,
+            shadowOpacity: (selectedTab == .stickers) ? 0 : shadowOpacity,
             shouldIncludeShadow: true,
             fgScale: fgScale,
             fgOffset: fgOffset,
@@ -304,10 +300,6 @@ class EditorViewModel: ObservableObject {
             // Dispatch to next runloop to prevent "Modifying state during view update" crash
             // resulting from ColorPicker binding updates triggering other published property changes.
             DispatchQueue.main.async {
-                // If user picks a color but width is 0, set a default width so it's visible
-                if self.stickerOutlineWidth == 0 {
-                    self.stickerOutlineWidth = 8
-                }
                 self.updateProcessedImage()
             }
         }

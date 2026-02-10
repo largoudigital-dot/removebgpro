@@ -424,7 +424,7 @@ struct EditorView: View {
                                 }
                             },
                             isEditingText: viewModel.showingTextEditor,
-                            persistentSelection: false,
+                            persistentSelection: viewModel.selectedTab == .stickers || viewModel.selectedTab == .crop,
                             shadowRadius: viewModel.shadowRadius,
                             shadowX: viewModel.shadowX,
                             shadowY: viewModel.shadowY,
