@@ -83,9 +83,6 @@ struct CanvasTabView: View {
     @State private var customWidth: String = "1080"
     @State private var customHeight: String = "1080"
     
-    @State private var showingSaveAlert = false
-    @State private var saveMessage: LocalizedStringKey = ""
-    
     var body: some View {
         VStack(spacing: 0) {
             // Schnitt (Crop) Options - Only show aspect ratio scroll
@@ -102,14 +99,6 @@ struct CanvasTabView: View {
                         InteractiveButton(action: {
                             if ratio == .custom {
                                 showingCustomSizeDialog = true
-                            } else if ratio == .free && isActuallySelected {
-                                // Special "Commit & Save JPEG" action for Frei mode
-                                AppHaptics.medium()
-                                viewModel.saveToGallery(format: .jpg) { success, message in
-                                    self.saveMessage = message
-                                    self.showingSaveAlert = true
-                                    if success { AppHaptics.success() }
-                                }
                             } else {
                                 viewModel.didChange()
                                 withAnimation(AppMotion.snappy) {
@@ -154,11 +143,6 @@ struct CanvasTabView: View {
         } message: {
             Text("Geben Sie die gewünschte Breite und Höhe in Pixeln ein.")
         }
-        .alert("Speichern", isPresented: $showingSaveAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(saveMessage)
-        }
     }
 }
 
@@ -172,7 +156,7 @@ struct RatioItemView: View {
                 .scaleEffect(isActuallySelected ? 1.1 : 1.0)
                 .animation(AppMotion.bouncy, value: isActuallySelected)
             
-            Text(ratio == .free && isActuallySelected ? "JPEG Speichern" : ratio.displayLabel)
+            Text(ratio.displayLabel)
                 .font(.system(size: 10, weight: isActuallySelected ? .bold : .medium))
         }
         .foregroundColor(isActuallySelected ? .blue : .primary)
