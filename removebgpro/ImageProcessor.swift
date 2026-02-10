@@ -832,7 +832,16 @@ class ImageProcessor {
     
     // MARK: - Outline Effect
     func applyOutline(to image: UIImage, width: CGFloat, color: Color) -> UIImage? {
-        guard let ciImage = CIImage(image: image) else { return nil }
+        guard let ciOriginal = CIImage(image: image) else { return nil }
+        
+        // 0. Expand the canvas to make room for the outline + some padding for blur/smoothing
+        // This is crucial for cropped images where the edge is a hard cut.
+        let margin = width + 4
+        let expandedExtent = ciOriginal.extent.insetBy(dx: -margin, dy: -margin)
+        
+        // Use a transparent background as the base for the expansion
+        let baseImage = CIImage.clear.cropped(to: expandedExtent)
+        let ciImage = ciOriginal.composited(over: baseImage)
         
         // 1. Create a mask from the alpha channel
         guard let maskFilter = CIFilter(name: "CIColorMatrix") else { return nil }
@@ -859,11 +868,8 @@ class ImageProcessor {
         guard let smoothedMask = smoothingFilter.outputImage else { return nil }
         
         // 2c. Sharpen the mask back into a hard (but smooth) edge using ColorMatrix
-        // We want to ramp any non-zero alpha back to 1.0 quickly
         let rampFilter = CIFilter(name: "CIColorMatrix")!
         rampFilter.setValue(smoothedMask, forKey: kCIInputImageKey)
-        // Adjust alpha vector to create a sharp cutoff: (alpha - 0.5) * highValue + 0.5
-        // This makes 0.5 precisely the edge, and sharpens transitions.
         rampFilter.setValue(CIVector(x: 0, y: 0, z: 0, w: 10), forKey: "inputAVector")
         rampFilter.setValue(CIVector(x: 0, y: 0, z: 0, w: -4.5), forKey: "inputBiasVector")
         
