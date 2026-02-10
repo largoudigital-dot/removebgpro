@@ -798,19 +798,117 @@ class ImageProcessor {
         return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
     }
     
+    // MARK: - Transparency Trimming
+    
+    func trimTransparency(from image: UIImage) -> UIImage? {
+        guard let cgImage = image.cgImage else { return nil }
+        
+        let width = cgImage.width
+        let height = cgImage.height
+        
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bytesPerPixel = 4
+        let bytesPerRow = bytesPerPixel * width
+        let bitsPerComponent = 8
+        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+        
+        guard let context = CGContext(data: nil,
+                                      width: width,
+                                      height: height,
+                                      bitsPerComponent: bitsPerComponent,
+                                      bytesPerRow: bytesPerRow,
+                                      space: colorSpace,
+                                      bitmapInfo: bitmapInfo) else {
+            return nil
+        }
+        
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        
+        guard let data = context.data else { return nil }
+        let ptr = data.bindMemory(to: UInt8.self, capacity: width * height * bytesPerPixel)
+        
+        var top = 0
+        var bottom = height - 1
+        var left = 0
+        var right = width - 1
+        
+        // Find top
+        topLoop: for y in 0..<height {
+            for x in 0..<width {
+                if ptr[(y * width + x) * bytesPerPixel + 3] > 0 {
+                    top = y
+                    break topLoop
+                }
+            }
+        }
+        
+        // If the image is completely transparent, return nil
+        if top == 0 && ptr[3] == 0 {
+            // Check if even the first pixel found was actually transparent
+            var allTransparent = true
+            for i in 0..<(width * height) {
+                if ptr[i * bytesPerPixel + 3] > 0 {
+                    allTransparent = false
+                    break
+                }
+            }
+            if allTransparent { return nil }
+        }
+        
+        // Find bottom
+        bottomLoop: for y in (top..<height).reversed() {
+            for x in 0..<width {
+                if ptr[(y * width + x) * bytesPerPixel + 3] > 0 {
+                    bottom = y
+                    break bottomLoop
+                }
+            }
+        }
+        
+        // Find left
+        leftLoop: for x in 0..<width {
+            for y in top...bottom {
+                if ptr[(y * width + x) * bytesPerPixel + 3] > 0 {
+                    left = x
+                    break leftLoop
+                }
+            }
+        }
+        
+        // Find right
+        rightLoop: for x in (left..<width).reversed() {
+            for y in top...bottom {
+                if ptr[(y * width + x) * bytesPerPixel + 3] > 0 {
+                    right = x
+                    break rightLoop
+                }
+            }
+        }
+        
+        let trimRect = CGRect(x: left, y: top, width: right - left + 1, height: bottom - top + 1)
+        
+        guard let trimmedCgImage = cgImage.cropping(to: trimRect) else {
+            return nil
+        }
+        
+        return UIImage(cgImage: trimmedCgImage, scale: image.scale, orientation: image.imageOrientation)
+    }
+    
     // MARK: - WhatsApp Sticker Generation
     func generateStickerImage(from image: UIImage, targetSize: CGFloat = 512, outlineWidth: CGFloat = 0, outlineColor: Color = .white) -> UIImage? {
+        // 0. Find "New Corners" by trimming transparency
+        // This ensures the sticker is tightly cropped to the actual content
+        let trimmedImage = trimTransparency(from: image) ?? image
+        
         // 1. Determine how much space the outline will take
-        // We use the same margin logic as applyOutline (width + 4)
         let outlinePadding = outlineWidth > 0 ? (outlineWidth + 4) : 0
         
         // 2. Scale the image so that the final sticker (image + outline) fits within targetSize
-        // This ensures the longest side of the final file is exactly targetSize.
         let availableSpace = targetSize - (outlinePadding * 2)
-        let scale = min(availableSpace / image.size.width, availableSpace / image.size.height)
+        let scale = min(availableSpace / trimmedImage.size.width, availableSpace / trimmedImage.size.height)
         
-        let scaledWidth = image.size.width * scale
-        let scaledHeight = image.size.height * scale
+        let scaledWidth = trimmedImage.size.width * scale
+        let scaledHeight = trimmedImage.size.height * scale
         
         // 3. Create a clean resized version of the image at the base size
         let format = UIGraphicsImageRendererFormat()
@@ -819,7 +917,7 @@ class ImageProcessor {
         
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: scaledWidth, height: scaledHeight), format: format)
         let scaledImage = renderer.image { _ in
-            image.draw(in: CGRect(x: 0, y: 0, width: scaledWidth, height: scaledHeight))
+            trimmedImage.draw(in: CGRect(x: 0, y: 0, width: scaledWidth, height: scaledHeight))
         }
         
         // 4. Apply the outline
