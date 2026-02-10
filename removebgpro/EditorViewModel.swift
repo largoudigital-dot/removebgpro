@@ -242,11 +242,11 @@ class EditorViewModel: ObservableObject {
             cropRect: appliedCropRect,
             stickers: stickers,
             textItems: textItems,
-            shadowRadius: (selectedTab == .stickers) ? 0 : shadowRadius,
-            shadowX: (selectedTab == .stickers) ? 0 : shadowX,
-            shadowY: (selectedTab == .stickers) ? 0 : shadowY,
+            shadowRadius: shadowRadius,
+            shadowX: shadowX,
+            shadowY: shadowY,
             shadowColor: shadowColor,
-            shadowOpacity: (selectedTab == .stickers) ? 0 : shadowOpacity,
+            shadowOpacity: shadowOpacity,
             shouldIncludeShadow: true,
             fgScale: fgScale,
             fgOffset: fgOffset,
@@ -673,6 +673,14 @@ class EditorViewModel: ObservableObject {
             fullParamsForProcessing.customSize = nil
             fullParamsForProcessing.cropRect = nil
             fullParamsForProcessing.shouldIncludeShadow = true 
+            // IMPORTANT: Reset user transforms for the LIVE preview image
+            // because ZoomableImageView applies these via SwiftUI .offset/.scaleEffect.
+            // Baking them in here would cause "double transformation".
+            fullParamsForProcessing.fgScale = 1.0
+            fullParamsForProcessing.fgOffset = .zero
+            fullParamsForProcessing.bgScale = 1.0
+            fullParamsForProcessing.bgOffset = .zero
+            
             // EXCLUDE: Items that are rendered as interactive overlays to avoid duplication
             fullParamsForProcessing.stickers = []
             fullParamsForProcessing.textItems = []
@@ -684,6 +692,12 @@ class EditorViewModel: ObservableObject {
             // 2. Generate CROPPED processed image
             var croppedParamsForProcessing = fullParams
             croppedParamsForProcessing.shouldIncludeShadow = true 
+            // Reset transforms here too for consistency
+            croppedParamsForProcessing.fgScale = 1.0
+            croppedParamsForProcessing.fgOffset = .zero
+            croppedParamsForProcessing.bgScale = 1.0
+            croppedParamsForProcessing.bgOffset = .zero
+
             // EXCLUDE: Items that are rendered as interactive overlays to avoid duplication
             croppedParamsForProcessing.stickers = []
             croppedParamsForProcessing.textItems = []

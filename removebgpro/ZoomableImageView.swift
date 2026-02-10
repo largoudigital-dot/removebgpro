@@ -27,6 +27,7 @@ struct ZoomableImageView: View {
     let onDeleteText: (UUID) -> Void
     let onEditText: (TextItem) -> Void
     let isEditingText: Bool
+    let persistentSelection: Bool // ADDED: Keep selection border visible
     
     // Shadow Properties
     let shadowRadius: CGFloat
@@ -70,6 +71,7 @@ struct ZoomableImageView: View {
         onDeleteText: @escaping (UUID) -> Void,
         onEditText: @escaping (TextItem) -> Void,
         isEditingText: Bool = false,
+        persistentSelection: Bool = false,
         shadowRadius: CGFloat = 0,
         shadowX: CGFloat = 0,
         shadowY: CGFloat = 0,
@@ -101,6 +103,7 @@ struct ZoomableImageView: View {
         self.onDeleteText = onDeleteText
         self.onEditText = onEditText
         self.isEditingText = isEditingText
+        self.persistentSelection = persistentSelection
         
         self.shadowRadius = shadowRadius
         self.shadowX = shadowX
@@ -138,26 +141,30 @@ struct ZoomableImageView: View {
                                 .aspectRatio(contentMode: .fill)
                                 .overlay(
                                     Rectangle()
-                                        .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas)) ? 3 : 0)
+                                        .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background)) ? 3 : 0)
                                 )
                                 .scaleEffect(bgScale)
                                 .offset(bgOffset)
                         } else if let colors = gradientColors {
-                            LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom)
-                                .overlay(
-                                    Rectangle()
-                                        .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas)) ? 3 : 0)
-                                )
-                                .scaleEffect(bgScale)
-                                .offset(bgOffset)
+                            ZStack {
+                                LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom)
+                            }
+                            .frame(width: geometry.size.width * bgScale, height: geometry.size.height * bgScale)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background)) ? 3 : 0)
+                            )
+                            .offset(bgOffset)
                         } else if let color = backgroundColor {
-                            color
-                                .overlay(
-                                    Rectangle()
-                                        .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas)) ? 3 : 0)
-                                )
-                                .scaleEffect(bgScale)
-                                .offset(bgOffset)
+                            ZStack {
+                                color
+                            }
+                            .frame(width: geometry.size.width * bgScale, height: geometry.size.height * bgScale)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background)) ? 3 : 0)
+                            )
+                            .offset(bgOffset)
                         }
                     }
                     .frame(width: geometry.size.width, height: geometry.size.height)
@@ -212,7 +219,7 @@ struct ZoomableImageView: View {
                                 .clipped()
                                 .overlay(
                                     Rectangle()
-                                        .stroke(Color.blue, lineWidth: (interactingLayer == .foreground || (interactingLayer == .canvas && activeLayer == .canvas)) ? 3 : 0)
+                                        .stroke(Color.blue, lineWidth: (interactingLayer == .foreground || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .foreground)) ? 3 : 0)
                                 )
                                 .shadow(
                                     color: shadowColor.opacity(max(shadowOpacity, 0.4)),

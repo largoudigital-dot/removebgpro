@@ -340,7 +340,7 @@ struct EditorView: View {
                 if isShowingOriginal { return viewModel.originalImage }
                 // Always use the FULL processed image in the editor display
                 // to keep dimensions stable. ZoomableImageView will mask it.
-                return viewModel.fullProcessedImage ?? viewModel.processedImage ?? viewModel.originalImage
+                return viewModel.fullProcessedImage ?? viewModel.originalImage
             }() ?? viewModel.originalImage
             
             // Determine the target aspect ratio for the CANVAS container
@@ -424,6 +424,7 @@ struct EditorView: View {
                                 }
                             },
                             isEditingText: viewModel.showingTextEditor,
+                            persistentSelection: viewModel.selectedTab == .stickers || viewModel.selectedTab == .crop,
                             shadowRadius: viewModel.shadowRadius,
                             shadowX: viewModel.shadowX,
                             shadowY: viewModel.shadowY,
