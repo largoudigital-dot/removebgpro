@@ -136,6 +136,16 @@ class EditorViewModel: ObservableObject {
     @Published var selectedTab: EditorTab? = nil {
         didSet {
             if selectedTab == .stickers {
+                if stickerOutlineWidth == 0 {
+                    // Apply the adaptive width rules on first entry
+                    if stickerSize == 512 {
+                        stickerOutlineWidth = 8
+                    } else if stickerSize == 96 {
+                        stickerOutlineWidth = 6
+                    } else if stickerSize == 21 {
+                        stickerOutlineWidth = 4
+                    }
+                }
                 isStickerModeActive = true
             }
         }
@@ -288,6 +298,15 @@ class EditorViewModel: ObservableObject {
         didSet { 
             didChange() 
             if !isStickerModeActive { isStickerModeActive = true }
+            
+            // Automatically adjust outline width based on chosen size
+            if stickerSize == 512 {
+                stickerOutlineWidth = 8
+            } else if stickerSize == 96 {
+                stickerOutlineWidth = 6
+            } else if stickerSize == 21 {
+                stickerOutlineWidth = 4
+            }
         }
     }
     @Published var isStickerModeActive = false
