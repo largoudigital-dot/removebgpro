@@ -505,7 +505,16 @@ class ImageProcessor {
         for item in items {
             // Determine font and size (base it on image width)
             let fontSize = size.width * 0.08 * item.scale
-            let font = UIFont(name: item.fontName, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize, weight: .bold)
+            
+            // Handle Bold/Italic via Font Traits
+            var font = UIFont(name: item.fontName, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
+            var traits: UIFontDescriptor.SymbolicTraits = []
+            if item.isBold { traits.insert(.traitBold) }
+            if item.isItalic { traits.insert(.traitItalic) }
+            
+            if !traits.isEmpty, let descriptor = font.fontDescriptor.withSymbolicTraits(traits) {
+                font = UIFont(descriptor: descriptor, size: fontSize)
+            }
             
             // Calculate text size and layout
             let paragraphStyle = NSMutableParagraphStyle()
@@ -514,14 +523,21 @@ class ImageProcessor {
             case .center: paragraphStyle.alignment = .center
             case .right: paragraphStyle.alignment = .right
             }
+            paragraphStyle.lineSpacing = item.lineSpacing * (fontSize / 22.0)
             
-            let attributes: [NSAttributedString.Key: Any] = [
+            var attributes: [NSAttributedString.Key: Any] = [
                 .font: font,
                 .foregroundColor: UIColor(item.color),
-                .paragraphStyle: paragraphStyle
+                .paragraphStyle: paragraphStyle,
+                .kern: item.kerning
             ]
             
-            let attributedString = NSAttributedString(string: item.text, attributes: attributes)
+            if item.isUnderlined {
+                attributes[.underlineStyle] = NSUnderlineStyle.single.rawValue
+            }
+            
+            let textToRender = item.isAllCaps ? item.text.uppercased() : item.text
+            let attributedString = NSAttributedString(string: textToRender, attributes: attributes)
             let textSize = attributedString.size()
             
             // Background padding

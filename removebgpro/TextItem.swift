@@ -39,6 +39,14 @@ struct TextItem: Identifiable, Codable, Equatable {
     var scale: CGFloat
     var rotationDegrees: Double
     
+    // Formatting Properties (New)
+    var lineSpacing: CGFloat
+    var kerning: CGFloat
+    var isBold: Bool
+    var isItalic: Bool
+    var isUnderlined: Bool
+    var isAllCaps: Bool
+    
     var position: CGPoint {
         get { codablePosition.cgPoint }
         set { codablePosition = CodablePoint(newValue) }
@@ -70,7 +78,13 @@ struct TextItem: Identifiable, Codable, Equatable {
         alignment: TextAlignment = .center,
         position: CGPoint = CGPoint(x: 0.5, y: 0.5),
         scale: CGFloat = 1.0,
-        rotation: Angle = .zero
+        rotation: Angle = .zero,
+        lineSpacing: CGFloat = 0,
+        kerning: CGFloat = 0,
+        isBold: Bool = false,
+        isItalic: Bool = false,
+        isUnderlined: Bool = false,
+        isAllCaps: Bool = false
     ) {
         self.id = id
         self.text = text
@@ -82,9 +96,16 @@ struct TextItem: Identifiable, Codable, Equatable {
         self.codablePosition = CodablePoint(position)
         self.scale = scale
         self.rotationDegrees = rotation.degrees
+        self.lineSpacing = lineSpacing
+        self.kerning = kerning
+        self.isBold = isBold
+        self.isItalic = isItalic
+        self.isUnderlined = isUnderlined
+        self.isAllCaps = isAllCaps
     }
     
     enum CodingKeys: String, CodingKey {
         case id, text, fontName, colorHex, backgroundColorHex, backgroundStyle, alignment, codablePosition, scale, rotationDegrees
+        case lineSpacing, kerning, isBold, isItalic, isUnderlined, isAllCaps
     }
 }

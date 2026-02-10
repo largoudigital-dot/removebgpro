@@ -34,6 +34,7 @@ struct CodableEditorState: Codable {
     var version: Int
     var stickerOutlineWidth: CGFloat
     var stickerOutlineColorHex: String?
+    var stickerSize: CGFloat // ADDED
     
     enum CodingKeys: String, CodingKey {
         case selectedFilter, brightness, contrast, saturation, blur, rotation
@@ -41,7 +42,7 @@ struct CodableEditorState: Codable {
         case backgroundImageName, foregroundImageName, appliedCropRect, stickers, textItems
         case shadowRadius, shadowX, shadowY, shadowColorHex, shadowOpacity
         case fgScale, fgOffset, bgScale, bgOffset, canvasScale, canvasOffset, version
-        case stickerOutlineWidth, stickerOutlineColorHex
+        case stickerOutlineWidth, stickerOutlineColorHex, stickerSize // ADDED
     }
     
     init(from decoder: Decoder) throws {
@@ -78,6 +79,7 @@ struct CodableEditorState: Codable {
         self.version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 0
         self.stickerOutlineWidth = try container.decodeIfPresent(CGFloat.self, forKey: .stickerOutlineWidth) ?? 0
         self.stickerOutlineColorHex = try container.decodeIfPresent(String.self, forKey: .stickerOutlineColorHex)
+        self.stickerSize = try container.decodeIfPresent(CGFloat.self, forKey: .stickerSize) ?? 512 // Default
     }
     
     func encode(to encoder: Encoder) throws {
@@ -113,6 +115,7 @@ struct CodableEditorState: Codable {
         try container.encode(version, forKey: .version)
         try container.encode(stickerOutlineWidth, forKey: .stickerOutlineWidth)
         try container.encodeIfPresent(stickerOutlineColorHex, forKey: .stickerOutlineColorHex)
+        try container.encode(stickerSize, forKey: .stickerSize)
     }
     
     // Initializer used during saving
@@ -146,7 +149,8 @@ struct CodableEditorState: Codable {
         canvasOffset: CodablePoint,
         version: Int,
         stickerOutlineWidth: CGFloat,
-        stickerOutlineColorHex: String?
+        stickerOutlineColorHex: String?,
+        stickerSize: CGFloat // ADDED
     ) {
         self.selectedFilter = selectedFilter
         self.brightness = brightness
@@ -178,6 +182,7 @@ struct CodableEditorState: Codable {
         self.version = version
         self.stickerOutlineWidth = stickerOutlineWidth
         self.stickerOutlineColorHex = stickerOutlineColorHex
+        self.stickerSize = stickerSize
     }
 }
 

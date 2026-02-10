@@ -1123,8 +1123,13 @@ struct TextItemOverlayView: View {
     var body: some View {
         ZStack {
             ZStack {
-                Text(item.text)
+                Text(item.isAllCaps ? item.text.uppercased() : item.text)
                     .font(.custom(item.fontName, size: 22))
+                    .fontWeight(item.isBold ? .bold : .regular)
+                    .italic(item.isItalic)
+                    .underline(item.isUnderlined)
+                    .kerning(item.kerning)
+                    .lineSpacing(item.lineSpacing)
                     .foregroundColor(item.color)
                     .multilineTextAlignment(mapAlignment(item.alignment))
                     .padding(.horizontal, 16)
@@ -1148,6 +1153,12 @@ struct TextItemOverlayView: View {
                                 .onAppear { contentSize = proxy.size }
                                 .onChange(of: item.text) { _ in contentSize = proxy.size }
                                 .onChange(of: item.fontName) { _ in contentSize = proxy.size }
+                                .onChange(of: item.scale) { _ in contentSize = proxy.size }
+                                .onChange(of: item.isBold) { _ in contentSize = proxy.size }
+                                .onChange(of: item.isItalic) { _ in contentSize = proxy.size }
+                                .onChange(of: item.isAllCaps) { _ in contentSize = proxy.size }
+                                .onChange(of: item.kerning) { _ in contentSize = proxy.size }
+                                .onChange(of: item.lineSpacing) { _ in contentSize = proxy.size }
                         }
                     )
                     .contentShape(Rectangle()) // Ensure the whole area is tappable

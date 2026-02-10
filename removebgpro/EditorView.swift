@@ -80,13 +80,8 @@ struct EditorView: View {
                     }
                 }
             
-            // ADDED: Save Status HUD (Below Header)
-            VStack {
-                saveStatusHUD
-                    .padding(.top, 100) // Positioned just below the navigation bar
-                Spacer()
-            }
-            .allowsHitTesting(false)
+            // Save Status HUD removed as per user request
+            // VStack { ... }
             
             if viewModel.showingTextEditor, let item = tempTextItem {
                 TextEditorOverlay(
@@ -96,10 +91,12 @@ struct EditorView: View {
                     ),
                     onDone: {
                         if let updated = tempTextItem {
-                            if viewModel.textItems.contains(where: { $0.id == updated.id }) {
+                            // Always update since we add the item immediately when creating
+                            if !updated.text.isEmpty {
                                 viewModel.updateTextItem(updated)
-                            } else if !updated.text.isEmpty {
-                                viewModel.addTextItem(updated)
+                            } else {
+                                // If text is empty, remove the item
+                                viewModel.removeTextItem(id: updated.id)
                             }
                         }
                         withAnimation(AppMotion.snappy) {
@@ -108,6 +105,10 @@ struct EditorView: View {
                         tempTextItem = nil
                     },
                     onCancel: {
+                        // Remove the item if user cancels
+                        if let item = tempTextItem {
+                            viewModel.removeTextItem(id: item.id)
+                        }
                         withAnimation(AppMotion.snappy) {
                             viewModel.showingTextEditor = false
                         }
@@ -118,23 +119,7 @@ struct EditorView: View {
                 .zIndex(2000)
         }
     }
-    .alert("Speichern", isPresented: $showingSaveAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(saveMessage)
-            }
-            .sheet(isPresented: $showingUnsplashPicker) {
-                UnsplashPickerView { newImage in
-                    viewModel.setBackgroundImage(newImage)
-                }
-            }
-            .sheet(isPresented: $viewModel.showingEmojiPicker) {
-                EmojiPickerView { content, type, color in
-                    viewModel.addSticker(content, type: type, color: color)
-                    viewModel.showingEmojiPicker = false
-                }
-                .presentationDetents([.fraction(0.6), .large])
-            }
+
             .alert("Editor verlassen?", isPresented: $showingExitAlert) {
                 Button("Abbrechen", role: .cancel) { }
                 Button("Speichern & Schließen", role: .destructive) {
@@ -149,7 +134,6 @@ struct EditorView: View {
             } message: {
                 Text("Möchten Sie die Bearbeitung beenden? Ihre Änderungen werden beim Schließen gespeichert.")
             }
-
     }
     
     private var bottomBar: some View {
@@ -323,6 +307,7 @@ struct EditorView: View {
         .padding(.horizontal, 8)
         .padding(.bottom, 8)
         .background(.ultraThinMaterial, ignoresSafeAreaEdges: .top)
+        .zIndex(100) // Ensure nav bar stays on top of content
     }
     
     private var photoArea: some View {
@@ -344,7 +329,7 @@ struct EditorView: View {
             }() ?? viewModel.originalImage
             
             // Determine the target aspect ratio for the CANVAS container
-            let isStickerMode = viewModel.selectedTab == .stickers
+            let isStickerMode = viewModel.selectedTab == .stickers || viewModel.isStickerModeActive
             let targetAspectRatio: CGFloat = {
                 if isStickerMode {
                     return 1.0 // Force square for stickers
@@ -584,7 +569,9 @@ struct EditorView: View {
     
     private var textButton: some View {
         InteractiveButton(action: {
-            tempTextItem = TextItem()
+            let newItem = TextItem()
+            tempTextItem = newItem
+            viewModel.addTextItem(newItem) // Add immediately so it appears on canvas
             withAnimation(AppMotion.snappy) {
                 viewModel.showingTextEditor = true
             }

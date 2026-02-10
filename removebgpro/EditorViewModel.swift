@@ -69,6 +69,10 @@ struct EditorState: Equatable {
     var shadowY: CGFloat
     var shadowColor: Color
     var shadowOpacity: Double
+    // ADDED: Sticker State
+    var stickerSize: CGFloat
+    var stickerOutlineWidth: CGFloat
+    var stickerOutlineColor: Color
     // ADDED: UI Transformation State
     var fgScale: CGFloat
     var fgOffset: CGSize
@@ -98,6 +102,9 @@ struct EditorState: Equatable {
             lhs.shadowY == rhs.shadowY &&
             lhs.shadowColor == rhs.shadowColor &&
             lhs.shadowOpacity == rhs.shadowOpacity &&
+            lhs.stickerSize == rhs.stickerSize &&
+            lhs.stickerOutlineWidth == rhs.stickerOutlineWidth &&
+            lhs.stickerOutlineColor == rhs.stickerOutlineColor &&
             lhs.fgScale == rhs.fgScale &&
             lhs.fgOffset == rhs.fgOffset &&
             lhs.bgScale == rhs.bgScale &&
@@ -117,7 +124,7 @@ class EditorViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     init() {
-        setupAutoSave()
+        // setupAutoSave() // Disabled per user request
     }
     
     @Published var originalImage: UIImage?
@@ -129,8 +136,11 @@ class EditorViewModel: ObservableObject {
     @Published var selectedTab: EditorTab? = nil {
         didSet {
             // Automatically initialize sticker outline when entering sticker mode
-            if selectedTab == .stickers && stickerOutlineWidth == 0 {
-                stickerOutlineWidth = 8
+            if selectedTab == .stickers {
+                if stickerOutlineWidth == 0 {
+                    stickerOutlineWidth = 8
+                }
+                isStickerModeActive = true
             }
         }
     }
@@ -278,7 +288,14 @@ class EditorViewModel: ObservableObject {
     
     @Published var showingStickerPreview = false
     @Published var stickerPreviewImage: UIImage? = nil
-    @Published var stickerSize: CGFloat = 512 // Default to 512x512
+    @Published var stickerSize: CGFloat = 512 { // Default to 512x512
+        didSet { 
+            didChange() 
+            if !isStickerModeActive { isStickerModeActive = true }
+        }
+    }
+    @Published var isStickerModeActive = false
+
     @Published var stickerOutlineWidth: CGFloat = 0 {
         didSet { updateProcessedImage() }
     }
@@ -315,6 +332,8 @@ class EditorViewModel: ObservableObject {
         self.foregroundImage = nil
         self.backgroundImage = nil
         self.currentProjectId = nil // Reset project tracking for new images
+        self.stickerSize = 512 // Reset sticker size default
+        self.isStickerModeActive = false
         
         // Reset transformations
         self.fgScale = 1.0
@@ -355,6 +374,9 @@ class EditorViewModel: ObservableObject {
             shadowY: shadowY,
             shadowColor: shadowColor,
             shadowOpacity: shadowOpacity,
+            stickerSize: stickerSize,
+            stickerOutlineWidth: stickerOutlineWidth,
+            stickerOutlineColor: stickerOutlineColor,
             fgScale: fgScale,
             fgOffset: fgOffset,
             bgScale: bgScale,
@@ -432,6 +454,10 @@ class EditorViewModel: ObservableObject {
         shadowY = state.shadowY
         shadowColor = state.shadowColor
         shadowOpacity = state.shadowOpacity
+        
+        stickerSize = state.stickerSize
+        stickerOutlineWidth = state.stickerOutlineWidth
+        stickerOutlineColor = state.stickerOutlineColor
         
         fgScale = state.fgScale
         fgOffset = state.fgOffset
@@ -631,29 +657,38 @@ class EditorViewModel: ObservableObject {
         // Use foreground if available, otherwise original
         guard let foreground = foregroundImage ?? originalImage else { return }
         
-        processingTask = Task {
+        // Capture specific values needed for processing to avoid data races
+        let fullParams = self.currentProcessingParameters
+        let imageProcessor = self.imageProcessor
+        
+        processingTask = Task.detached(priority: .userInitiated) {
             // Debounce: Wait a short time to see if another update comes in
-            // This prevents processing every single step of a slider drag
-            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+            try? await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
             
             if Task.isCancelled { return }
             
             // 1. Generate FULL processed image (no crop)
-            var fullParams = self.currentProcessingParameters
-            fullParams.aspectRatio = nil
-            fullParams.customSize = nil
-            fullParams.cropRect = nil
-            fullParams.shouldIncludeShadow = true // Enable baking (outline/shadow) for preview
+            var fullParamsForProcessing = fullParams
+            fullParamsForProcessing.aspectRatio = nil
+            fullParamsForProcessing.customSize = nil
+            fullParamsForProcessing.cropRect = nil
+            fullParamsForProcessing.shouldIncludeShadow = true 
+            // EXCLUDE: Items that are rendered as interactive overlays to avoid duplication
+            fullParamsForProcessing.stickers = []
+            fullParamsForProcessing.textItems = []
             
-            let full = self.imageProcessor.processImageWithCrop(original: foreground, params: fullParams)
+            let full = imageProcessor.processImageWithCrop(original: foreground, params: fullParamsForProcessing)
             
             if Task.isCancelled { return }
             
             // 2. Generate CROPPED processed image
-            var croppedParams = self.currentProcessingParameters
-            croppedParams.shouldIncludeShadow = true // Enable baking (outline/shadow) for preview
+            var croppedParamsForProcessing = fullParams
+            croppedParamsForProcessing.shouldIncludeShadow = true 
+            // EXCLUDE: Items that are rendered as interactive overlays to avoid duplication
+            croppedParamsForProcessing.stickers = []
+            croppedParamsForProcessing.textItems = []
             
-            let cropped = self.imageProcessor.processImageWithCrop(original: foreground, params: croppedParams)
+            let cropped = imageProcessor.processImageWithCrop(original: foreground, params: croppedParamsForProcessing)
             
             if Task.isCancelled { return }
             
@@ -883,7 +918,8 @@ class EditorViewModel: ObservableObject {
             canvasOffset: CodablePoint(CGPoint(x: canvasOffset.width, y: canvasOffset.height)),
             version: stateVersion,
             stickerOutlineWidth: stickerOutlineWidth,
-            stickerOutlineColorHex: stickerOutlineColor.hex
+            stickerOutlineColorHex: stickerOutlineColor.hex,
+            stickerSize: stickerSize // ADDED
         )
         
         // Generate thumbnail
@@ -1030,6 +1066,7 @@ class EditorViewModel: ObservableObject {
             if let hex = state.stickerOutlineColorHex {
                 self.stickerOutlineColor = Color(hex: hex)
             }
+            self.stickerSize = state.stickerSize // ADDED
             
             self.updateAdjustment()
             self.lastSavedState = currentState()
@@ -1038,18 +1075,6 @@ class EditorViewModel: ObservableObject {
     }
     
     private func setupAutoSave() {
-        // Capture relevant state changes only, avoid saveStatus changes triggering it
-        // We'll use a local state comparison within the debounce
-        objectWillChange
-            .debounce(for: .seconds(2), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
-                guard let self = self, !self.isApplyingState else { return }
-                
-                // Only save if the actual state content has changed relative to last save
-                if self.hasChanges {
-                    self.saveProject { _, _ in }
-                }
-            }
-            .store(in: &cancellables)
+        // Auto-save disabled as per user request
     }
 }
