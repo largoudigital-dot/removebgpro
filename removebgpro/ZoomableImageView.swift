@@ -330,7 +330,12 @@ struct ZoomableImageView: View {
                     Rectangle()
                         .fill(guideColor)
                         .frame(width: 1.5, height: geometry.size.height)
-                        .position(x: snapX * geometry.size.width, y: geometry.size.height / 2)
+                        .position(x: {
+                            let px = snapX * geometry.size.width
+                            if snapX == 0 { return px + 0.75 }
+                            if snapX == 1 { return px - 0.75 }
+                            return px
+                        }(), y: geometry.size.height / 2)
                         .transition(.opacity)
                         .zIndex(1001)
                 }
@@ -340,7 +345,12 @@ struct ZoomableImageView: View {
                     Rectangle()
                         .fill(guideColor)
                         .frame(width: geometry.size.width, height: 1.5)
-                        .position(x: geometry.size.width / 2, y: snapY * geometry.size.height)
+                        .position(x: geometry.size.width / 2, y: {
+                            let py = snapY * geometry.size.height
+                            if snapY == 0 { return py + 0.75 }
+                            if snapY == 1 { return py - 0.75 }
+                            return py
+                        }())
                         .transition(.opacity)
                         .zIndex(1001)
                 }
@@ -638,11 +648,18 @@ struct ZoomableImageView: View {
                 // Actually updatePosition is called WHILE dragging, but fgScale might be updated by zoom as well.
                 // Assuming fgScale is the scale applied.
                 
-                layerSize = CGSize(width: img.size.width * scale * (layer == .foreground ? fgScale : bgScale),
-                                   height: img.size.height * scale * (layer == .foreground ? fgScale : bgScale))
+                let isRotatedOdd = Int(abs(rotation.truncatingRemainder(dividingBy: 180))) == 90
+                let currentScale = (layer == .foreground ? fgScale : bgScale)
+                
+                if isRotatedOdd {
+                    layerSize = CGSize(width: img.size.height * scale * currentScale,
+                                       height: img.size.width * scale * currentScale)
+                } else {
+                    layerSize = CGSize(width: img.size.width * scale * currentScale,
+                                       height: img.size.height * scale * currentScale)
+                }
             } else {
-                 // Background is Aspect Fill - harder to snap edges unless we calculate exact coverage.
-                 // For now, let's treat Background center snapping as primary.
+                 // Background is Aspect Fill
                  let currentScale = (layer == .foreground ? fgScale : bgScale)
                  layerSize = CGSize(width: containerSize.width * currentScale, height: containerSize.height * currentScale)
             }

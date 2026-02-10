@@ -505,10 +505,7 @@ class EditorViewModel: ObservableObject {
         bakeParams.textItems = []
         bakeParams.shouldIncludeShadow = true
         
-        // If there's no background, default to white to "flatten" it into a photo
-        if isBackgroundTransparent {
-            bakeParams.backgroundColor = .white
-        }
+        // Keep transparency if it exists (don't force white background)
         
         if let baked = imageProcessor.processImageWithCrop(original: foreground, params: bakeParams) {
             // Update the images - this becomes the new starting point
