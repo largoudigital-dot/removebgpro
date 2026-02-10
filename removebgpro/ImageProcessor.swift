@@ -827,10 +827,10 @@ class ImageProcessor {
         guard let data = context.data else { return nil }
         let ptr = data.bindMemory(to: UInt8.self, capacity: width * height * bytesPerPixel)
         
-        var top = 0
-        var bottom = height - 1
-        var left = 0
-        var right = width - 1
+        var top = -1
+        var bottom = -1
+        var left = -1
+        var right = -1
         
         // Find top
         topLoop: for y in 0..<height {
@@ -842,18 +842,8 @@ class ImageProcessor {
             }
         }
         
-        // If the image is completely transparent, return nil
-        if top == 0 && ptr[3] == 0 {
-            // Check if even the first pixel found was actually transparent
-            var allTransparent = true
-            for i in 0..<(width * height) {
-                if ptr[i * bytesPerPixel + 3] > 0 {
-                    allTransparent = false
-                    break
-                }
-            }
-            if allTransparent { return nil }
-        }
+        // If no non-transparent pixel found
+        guard top != -1 else { return nil }
         
         // Find bottom
         bottomLoop: for y in (top..<height).reversed() {

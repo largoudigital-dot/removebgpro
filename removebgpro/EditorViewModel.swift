@@ -137,6 +137,12 @@ class EditorViewModel: ObservableObject {
         didSet {
             if selectedTab == .stickers {
                 isStickerModeActive = true
+                // Automatically trim transparency when entering stickers tab
+                // to "find new corners" of the subject.
+                if let fg = foregroundImage, let trimmed = imageProcessor.trimTransparency(from: fg) {
+                    foregroundImage = trimmed
+                    updateProcessedImage()
+                }
             }
         }
     }
@@ -588,7 +594,8 @@ class EditorViewModel: ObservableObject {
             do {
                 if let processed = try await removalService.removeBackground(from: image) {
                     await MainActor.run {
-                        self.foregroundImage = processed
+                        // Trim transparency immediately to find new corners
+                        self.foregroundImage = self.imageProcessor.trimTransparency(from: processed) ?? processed
                         self.updateProcessedImage()
                         self.isRemovingBackground = false
                     }
