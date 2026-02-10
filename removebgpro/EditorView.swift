@@ -118,22 +118,36 @@ struct EditorView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(2000)
         }
-    }
-
-            .alert("Editor verlassen?", isPresented: $showingExitAlert) {
-                Button("Abbrechen", role: .cancel) { }
-                Button("Speichern & Schließen", role: .destructive) {
-                    viewModel.saveProject { _, _ in
-                        dismiss()
-                    }
-                }
-                Button("Projekt löschen", role: .destructive) {
-                    viewModel.deleteCurrentProject()
+        .alert("Editor verlassen?", isPresented: $showingExitAlert) {
+            Button("Abbrechen", role: .cancel) { }
+            Button("Speichern & Schließen", role: .destructive) {
+                viewModel.saveProject { _, _ in
                     dismiss()
                 }
-            } message: {
-                Text("Möchten Sie die Bearbeitung beenden? Ihre Änderungen werden beim Schließen gespeichert.")
             }
+            Button("Projekt löschen", role: .destructive) {
+                viewModel.deleteCurrentProject()
+                dismiss()
+            }
+        } message: {
+            Text("Möchten Sie die Bearbeitung beenden? Ihre Änderungen werden beim Schließen gespeichert.")
+        }
+        .sheet(isPresented: $viewModel.showingEmojiPicker) {
+            EmojiPickerView(onSelected: { content, type, color in
+                viewModel.addSticker(content, type: type, color: color)
+                viewModel.showingEmojiPicker = false
+            })
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showingUnsplashPicker) {
+            UnsplashPickerView(onSelected: { image in
+                viewModel.setBackgroundImage(image)
+                showingUnsplashPicker = false
+            })
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
     }
     
     private var bottomBar: some View {
