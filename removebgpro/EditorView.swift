@@ -742,7 +742,7 @@ struct StickerExportTabView: View {
     private func sizeButton(size: CGFloat, label: String) -> some View {
         InteractiveButton(action: {
             withAnimation(AppMotion.snappy) {
-                viewModel.stickerSize = size
+                viewModel.applyStickerSize(size)
             }
             AppHaptics.light()
         }) {
