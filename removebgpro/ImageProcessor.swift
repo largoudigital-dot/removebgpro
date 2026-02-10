@@ -800,46 +800,36 @@ class ImageProcessor {
     
     // MARK: - WhatsApp Sticker Generation
     func generateStickerImage(from image: UIImage, targetSize: CGFloat = 512, outlineWidth: CGFloat = 0, outlineColor: Color = .white) -> UIImage? {
-        var baseImage = image
+        // 1. Determine how much space the outline will take
+        // We use the same margin logic as applyOutline (width + 4)
+        let outlinePadding = outlineWidth > 0 ? (outlineWidth + 4) : 0
         
-        // 1. Apply outline if requested
-        if outlineWidth > 0 {
-            // Apply outline to the base image first
-            // Note: applyOutline handles its own internal padding/expansion
-            if let outlined = applyOutline(to: image, width: outlineWidth, color: outlineColor) {
-                baseImage = outlined
-            }
-        }
+        // 2. Scale the image so that the final sticker (image + outline) fits within targetSize
+        // This ensures the longest side of the final file is exactly targetSize.
+        let availableSpace = targetSize - (outlinePadding * 2)
+        let scale = min(availableSpace / image.size.width, availableSpace / image.size.height)
         
-        // 2. Calculate aspect fit scale for the (now outlined) image
-        let margin: CGFloat = targetSize * 0.04 // 4% margin (approx 20px for 512)
-        let drawArea = targetSize - (margin * 2)
+        let scaledWidth = image.size.width * scale
+        let scaledHeight = image.size.height * scale
         
-        let widthRatio = drawArea / baseImage.size.width
-        let heightRatio = drawArea / baseImage.size.height
-        let scale = min(widthRatio, heightRatio)
-        
-        // Final dimensions to draw
-        let newWidth = baseImage.size.width * scale
-        let newHeight = baseImage.size.height * scale
-        
-        // Center position in the targetSize square
-        let x = (targetSize - newWidth) / 2
-        let y = (targetSize - newHeight) / 2
-        
+        // 3. Create a clean resized version of the image at the base size
         let format = UIGraphicsImageRendererFormat()
-        format.scale = 1.0 // Ensure exact pixel dimensions (512x512 etc)
+        format.scale = 1.0 // Exact pixel control
         format.opaque = false
         
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: targetSize, height: targetSize), format: format)
-        
-        return renderer.image { context in
-            // Clear background for absolute transparency
-            context.cgContext.clear(CGRect(x: 0, y: 0, width: targetSize, height: targetSize))
-            
-            // Draw image with high quality
-            baseImage.draw(in: CGRect(x: x, y: y, width: newWidth, height: newHeight))
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: scaledWidth, height: scaledHeight), format: format)
+        let scaledImage = renderer.image { _ in
+            image.draw(in: CGRect(x: 0, y: 0, width: scaledWidth, height: scaledHeight))
         }
+        
+        // 4. Apply the outline
+        // applyOutline will expand the canvas of 'scaledImage' by exactly 'outlinePadding'
+        // Resulting in a final image of (scaledWidth + 2*outlinePadding) x (scaledHeight + 2*outlinePadding)
+        if outlineWidth > 0 {
+            return applyOutline(to: scaledImage, width: outlineWidth, color: outlineColor)
+        }
+        
+        return scaledImage
     }
     
     // MARK: - Outline Effect
