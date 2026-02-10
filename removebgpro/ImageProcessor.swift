@@ -799,24 +799,36 @@ class ImageProcessor {
     }
     
     // MARK: - WhatsApp Sticker Generation
-    func generateStickerImage(from image: UIImage, targetSize: CGFloat = 512) -> UIImage? {
-        let margin: CGFloat = targetSize * 0.03 // Proportional margin (approx 16 for 512)
-        let drawSize = targetSize - (margin * 2)
+    func generateStickerImage(from image: UIImage, targetSize: CGFloat = 512, outlineWidth: CGFloat = 0, outlineColor: Color = .white) -> UIImage? {
+        var baseImage = image
         
-        // Calculate aspect fit scale
-        let widthRatio = drawSize / image.size.width
-        let heightRatio = drawSize / image.size.height
+        // 1. Apply outline if requested
+        if outlineWidth > 0 {
+            // Apply outline to the base image first
+            // Note: applyOutline handles its own internal padding/expansion
+            if let outlined = applyOutline(to: image, width: outlineWidth, color: outlineColor) {
+                baseImage = outlined
+            }
+        }
+        
+        // 2. Calculate aspect fit scale for the (now outlined) image
+        let margin: CGFloat = targetSize * 0.04 // 4% margin (approx 20px for 512)
+        let drawArea = targetSize - (margin * 2)
+        
+        let widthRatio = drawArea / baseImage.size.width
+        let heightRatio = drawArea / baseImage.size.height
         let scale = min(widthRatio, heightRatio)
         
-        let newWidth = image.size.width * scale
-        let newHeight = image.size.height * scale
+        // Final dimensions to draw
+        let newWidth = baseImage.size.width * scale
+        let newHeight = baseImage.size.height * scale
         
-        // Center position
+        // Center position in the targetSize square
         let x = (targetSize - newWidth) / 2
         let y = (targetSize - newHeight) / 2
         
         let format = UIGraphicsImageRendererFormat()
-        format.scale = 1.0 // Ensure exact pixel dimensions
+        format.scale = 1.0 // Ensure exact pixel dimensions (512x512 etc)
         format.opaque = false
         
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: targetSize, height: targetSize), format: format)
@@ -826,7 +838,7 @@ class ImageProcessor {
             context.cgContext.clear(CGRect(x: 0, y: 0, width: targetSize, height: targetSize))
             
             // Draw image with high quality
-            image.draw(in: CGRect(x: x, y: y, width: newWidth, height: newHeight))
+            baseImage.draw(in: CGRect(x: x, y: y, width: newWidth, height: newHeight))
         }
     }
     

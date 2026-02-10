@@ -822,11 +822,53 @@ class EditorViewModel: ObservableObject {
     }
     
     func prepareStickerPreview() {
-        guard let foreground = foregroundImage ?? originalImage else { return }
+        guard var baseImage = foregroundImage ?? originalImage else { return }
         
-        let compositeImage = self.imageProcessor.processImageWithCrop(original: foreground, params: self.currentProcessingParameters) ?? foreground
+        // 1. Physically CROP the image if a crop rect exists
+        // This ensures the sticker is based ONLY on the visible part.
+        if let rect = appliedCropRect {
+            let imageSize = baseImage.size
+            let cropZone = CGRect(
+                x: rect.minX * imageSize.width,
+                y: rect.minY * imageSize.height,
+                width: rect.width * imageSize.width,
+                height: rect.height * imageSize.height
+            )
+            
+            let scale = baseImage.scale
+            let scaledCropZone = CGRect(
+                x: cropZone.origin.x * scale,
+                y: cropZone.origin.y * scale,
+                width: cropZone.size.width * scale,
+                height: cropZone.size.height * scale
+            )
+            
+            if let cgImage = baseImage.cgImage,
+               let croppedCg = cgImage.cropping(to: scaledCropZone) {
+                baseImage = UIImage(cgImage: croppedCg, scale: scale, orientation: baseImage.imageOrientation)
+            }
+        }
         
-        if let stickerImage = imageProcessor.generateStickerImage(from: compositeImage, targetSize: self.stickerSize) {
+        // 2. Apply Filters/Adjustments (but NO visual masking/composite here)
+        let params = self.currentProcessingParameters
+        let processedBase = self.imageProcessor.processImage(
+            original: baseImage,
+            filter: params.filter,
+            brightness: params.brightness,
+            contrast: params.contrast,
+            saturation: params.saturation,
+            blur: params.blur,
+            rotation: params.rotation
+        ) ?? baseImage
+        
+        // 3. Generate final sticker with Outline and Padding
+        // We pass the stickerOutlineWidth explicitly here
+        if let stickerImage = imageProcessor.generateStickerImage(
+            from: processedBase,
+            targetSize: self.stickerSize,
+            outlineWidth: stickerOutlineWidth,
+            outlineColor: stickerOutlineColor
+        ) {
             DispatchQueue.main.async {
                 self.stickerPreviewImage = stickerImage
                 self.showingStickerPreview = true
