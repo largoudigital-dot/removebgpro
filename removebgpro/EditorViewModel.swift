@@ -488,47 +488,11 @@ class EditorViewModel: ObservableObject {
     }
     
     func applyCrop(_ rect: CGRect) {
+        // Now "rect" is relative to the FULL processed image,
+        // because we show the full image in crop mode.
         didChange()
-        
-        // Use the high-quality processor to generate the baked result
-        // We capture the current foreground (or original) to bake it.
-        guard let foreground = foregroundImage ?? originalImage else {
-            isCropping = false
-            return
-        }
-        
-        // Prepare parameters for baking
-        var bakeParams = currentProcessingParameters
-        bakeParams.cropRect = rect
-        // EXCLUDE dynamic overlays (stickers/text) from baking
-        bakeParams.stickers = []
-        bakeParams.textItems = []
-        bakeParams.shouldIncludeShadow = true
-        
-        // Keep transparency if it exists (don't force white background)
-        
-        if let baked = imageProcessor.processImageWithCrop(original: foreground, params: bakeParams) {
-            // Update the images - this becomes the new starting point
-            self.foregroundImage = baked
-            self.originalImage = baked
-            
-            // Clear crop and transformations since they are now part of the pixels
-            self.appliedCropRect = nil
-            self.fgScale = 1.0
-            self.fgOffset = .zero
-            self.bgScale = 1.0
-            self.bgOffset = .zero
-            
-            // Clear background settings as they are now baked
-            self.backgroundColor = nil
-            self.gradientColors = nil
-            self.backgroundImage = nil
-            
-            // Note: rotation is also baked in by the processor if it was set
-            self.rotation = 0
-        }
-        
-        isCropping = false
+        appliedCropRect = rect
+        isCropping = false // Exit crop mode so the cropped image becomes visible
         updateProcessedImage()
     }
     

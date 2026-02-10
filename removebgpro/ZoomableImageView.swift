@@ -168,46 +168,61 @@ struct ZoomableImageView: View {
                     if let displayImage = (foreground ?? original) {
                         let uiScale = max(geometry.size.width, geometry.size.height) / 1000.0
                         
-                        ZStack {
-                            Image(uiImage: displayImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                            
-                            if isCropping, let commit = onCropCommit {
-                                CropOverlayView(initialRect: appliedCropRect ?? CGRect(x: 0, y: 0, width: 1, height: 1), onCommit: commit)
+                        // --- VISUAL DIMENSION CALCULATIONS ---
+                        let widthRatio = geometry.size.width / displayImage.size.width
+                        let heightRatio = geometry.size.height / displayImage.size.height
+                        let baseFitScale = min(widthRatio, heightRatio)
+                        
+                        // Full uncropped size at current scale
+                        let fullW = displayImage.size.width * baseFitScale * fgScale
+                        let fullH = displayImage.size.height * baseFitScale * fgScale
+                        
+                        // Cropped size and its offset from the original center
+                        let crop = appliedCropRect ?? CGRect(x: 0, y: 0, width: 1, height: 1)
+                        let visualSize = CGSize(width: fullW * crop.width, height: fullH * crop.height)
+                        let visualCenterOffset = CGSize(
+                            width: (crop.midX - 0.5) * fullW,
+                            height: (crop.midY - 0.5) * fullH
+                        )
+                        
+                        Group {
+                            if isCropping {
+                                // While cropping, show the full image with the crop overlay
+                                ZStack {
+                                    Image(uiImage: displayImage)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                    
+                                    if let commit = onCropCommit {
+                                        CropOverlayView(initialRect: appliedCropRect ?? CGRect(x: 0, y: 0, width: 1, height: 1), onCommit: commit)
+                                    }
+                                }
+                                .scaleEffect(fgScale)
+                                .offset(fgOffset)
+                            } else {
+                                // Normal mode: image is framed within its cropped boundaries
+                                ZStack {
+                                    Image(uiImage: displayImage)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: fullW, height: fullH)
+                                        .offset(x: -visualCenterOffset.width, y: -visualCenterOffset.height)
+                                }
+                                .frame(width: visualSize.width, height: visualSize.height)
+                                .clipped()
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.blue, lineWidth: (interactingLayer == .foreground || (interactingLayer == .canvas && activeLayer == .canvas)) ? 3 : 0)
+                                )
+                                .shadow(
+                                    color: shadowColor.opacity(max(shadowOpacity, 0.4)),
+                                    radius: shadowRadius * uiScale,
+                                    x: shadowX * uiScale,
+                                    y: shadowY * uiScale
+                                )
+                                .offset(x: fgOffset.width + visualCenterOffset.width, y: fgOffset.height + visualCenterOffset.height)
                             }
                         }
-                        .overlay(
-                            Rectangle()
-                                .stroke(Color.blue, lineWidth: (interactingLayer == .foreground || (interactingLayer == .canvas && activeLayer == .canvas)) ? 3 : 0)
-                        )
-                        // Visual Crop Mask: Applied when NOT cropping to show the "cut" effect
-                        // without changing the underlying image size or position.
-                        .mask(
-                            GeometryReader { imageGeo in
-                                if let crop = appliedCropRect, !isCropping {
-                                    Rectangle()
-                                        .frame(
-                                            width: crop.width * imageGeo.size.width,
-                                            height: crop.height * imageGeo.size.height
-                                        )
-                                        .position(
-                                            x: (crop.minX + crop.width/2) * imageGeo.size.width,
-                                            y: (crop.minY + crop.height/2) * imageGeo.size.height
-                                        )
-                                } else {
-                                    Rectangle()
-                                }
-                            }
-                        )
-                        .shadow(
-                            color: shadowColor.opacity(max(shadowOpacity, 0.4)), // Ensure it's slightly more visible in preview
-                            radius: shadowRadius * uiScale,
-                            x: shadowX * uiScale,
-                            y: shadowY * uiScale
-                        )
-                        .scaleEffect(fgScale)
-                        .offset(fgOffset)
                         .gesture(layerGesture(for: .foreground, containerSize: geometry.size))
                     }
                 }
@@ -330,12 +345,7 @@ struct ZoomableImageView: View {
                     Rectangle()
                         .fill(guideColor)
                         .frame(width: 1.5, height: geometry.size.height)
-                        .position(x: {
-                            let px = snapX * geometry.size.width
-                            if snapX == 0 { return px + 0.75 }
-                            if snapX == 1 { return px - 0.75 }
-                            return px
-                        }(), y: geometry.size.height / 2)
+                        .position(x: snapX * geometry.size.width, y: geometry.size.height / 2)
                         .transition(.opacity)
                         .zIndex(1001)
                 }
@@ -345,12 +355,7 @@ struct ZoomableImageView: View {
                     Rectangle()
                         .fill(guideColor)
                         .frame(width: geometry.size.width, height: 1.5)
-                        .position(x: geometry.size.width / 2, y: {
-                            let py = snapY * geometry.size.height
-                            if snapY == 0 { return py + 0.75 }
-                            if snapY == 1 { return py - 0.75 }
-                            return py
-                        }())
+                        .position(x: geometry.size.width / 2, y: snapY * geometry.size.height)
                         .transition(.opacity)
                         .zIndex(1001)
                 }
@@ -637,37 +642,47 @@ struct ZoomableImageView: View {
             
             // 1. Determine Frame Size
             var layerSize = containerSize
+            var visualCenterOffset = CGSize.zero // Offset of the visual center from the underlying image center
+
             if layer == .foreground, let img = (foreground ?? original) {
                 // Foreground is Aspect Fit
-                // Calculate projected size
                 let widthRatio = containerSize.width / img.size.width
                 let heightRatio = containerSize.height / img.size.height
-                let scale = min(widthRatio, heightRatio)
-                // Also account for user scale (fgScale)
-                let currentScale = (layer == .foreground ? fgScale : bgScale) // Use current interactive scale?
-                // Actually updatePosition is called WHILE dragging, but fgScale might be updated by zoom as well.
-                // Assuming fgScale is the scale applied.
+                let baseFitScale = min(widthRatio, heightRatio)
                 
-                let isRotatedOdd = Int(abs(rotation.truncatingRemainder(dividingBy: 180))) == 90
-                let currentScale = (layer == .foreground ? fgScale : bgScale)
+                // Effective scale includes the manual fgScale
+                let effectiveScale = baseFitScale * fgScale
                 
-                if isRotatedOdd {
-                    layerSize = CGSize(width: img.size.height * scale * currentScale,
-                                       height: img.size.width * scale * currentScale)
+                if let crop = appliedCropRect {
+                    // Visual size is the cropped portion's size on screen
+                    layerSize = CGSize(
+                        width: img.size.width * crop.width * effectiveScale,
+                        height: img.size.height * crop.height * effectiveScale
+                    )
+                    
+                    // visualCenterOffset is where the center of the crop is relative to the center of the original image (in pixels)
+                    // normalized offset from center is (crop.midX - 0.5)
+                    let normCenterX = crop.midX - 0.5
+                    let normCenterY = crop.midY - 0.5
+                    
+                    visualCenterOffset = CGSize(
+                        width: normCenterX * img.size.width * effectiveScale,
+                        height: normCenterY * img.size.height * effectiveScale
+                    )
                 } else {
-                    layerSize = CGSize(width: img.size.width * scale * currentScale,
-                                       height: img.size.height * scale * currentScale)
+                    layerSize = CGSize(width: img.size.width * effectiveScale,
+                                       height: img.size.height * effectiveScale)
                 }
             } else {
-                 // Background is Aspect Fill
-                 let currentScale = (layer == .foreground ? fgScale : bgScale)
-                 layerSize = CGSize(width: containerSize.width * currentScale, height: containerSize.height * currentScale)
+                // Background is Aspect Fill
+                layerSize = CGSize(width: containerSize.width * bgScale, height: containerSize.height * bgScale)
             }
             
-            // 2. Calculate projected center position relative to canvas center
-            // offset is translation from center.
-            let centerX = containerSize.width / 2 + predictedX
-            let centerY = containerSize.height / 2 + predictedY
+            // 2. Calculate projected center position of the VISUAL content relative to canvas center
+            // predictedX/Y is the translation of the original image center.
+            // We need to snap based on the VISUAL center.
+            let visualCenterX = containerSize.width / 2 + predictedX + visualCenterOffset.width
+            let visualCenterY = containerSize.height / 2 + predictedY + visualCenterOffset.height
             
             let halfW = layerSize.width / 2
             let halfH = layerSize.height / 2
@@ -682,44 +697,44 @@ struct ZoomableImageView: View {
             var newActiveSnapX: CGFloat? = nil
             var newActiveSnapY: CGFloat? = nil
             
-            // X Snapping
-             // Center
-            if abs(predictedX) < snapThreshold {
-                snappedX = 0
+            // X Snapping (using visualCenterX and visualCenterOffset to correct predictedX)
+            // Center
+            let visualPredictedOffsetX = predictedX + visualCenterOffset.width
+            if abs(visualPredictedOffsetX) < snapThreshold {
+                snappedX = -visualCenterOffset.width
                 newShowV = true; newActiveSnapX = 0.5
             } else {
-                // Left Edge relative to Canvas Left
-                // Canvas Left is 0. Projected Left is centerX - halfW.
-                let projectedLeft = centerX - halfW
-                if abs(projectedLeft) < snapThreshold {
-                    snappedX = predictedX - projectedLeft // shift back to make projectedLeft 0
+                // Left Edge relative to Canvas Left (0)
+                let projectedVisualLeft = visualCenterX - halfW
+                if abs(projectedVisualLeft) < snapThreshold {
+                    snappedX = predictedX - projectedVisualLeft
                     newShowV = true; newActiveSnapX = 0.0
                 } else {
                     // Right Edge relative to Canvas Right
-                    let projectedRight = centerX + halfW
-                    if abs(projectedRight - containerSize.width) < snapThreshold {
-                         snappedX = predictedX - (projectedRight - containerSize.width)
+                    let projectedVisualRight = visualCenterX + halfW
+                    if abs(projectedVisualRight - containerSize.width) < snapThreshold {
+                         snappedX = predictedX - (projectedVisualRight - containerSize.width)
                          newShowV = true; newActiveSnapX = 1.0
                     }
                 }
             }
             
             // Y Snapping
-             // Center
-            if abs(predictedY) < snapThreshold {
-                snappedY = 0
+            let visualPredictedOffsetY = predictedY + visualCenterOffset.height
+            if abs(visualPredictedOffsetY) < snapThreshold {
+                snappedY = -visualCenterOffset.height
                 newShowH = true; newActiveSnapY = 0.5
             } else {
                 // Top Edge
-                let projectedTop = centerY - halfH
-                if abs(projectedTop) < snapThreshold {
-                    snappedY = predictedY - projectedTop
+                let projectedVisualTop = visualCenterY - halfH
+                if abs(projectedVisualTop) < snapThreshold {
+                    snappedY = predictedY - projectedVisualTop
                     newShowH = true; newActiveSnapY = 0.0
                 } else {
                      // Bottom Edge
-                     let projectedBottom = centerY + halfH
-                     if abs(projectedBottom - containerSize.height) < snapThreshold {
-                         snappedY = predictedY - (projectedBottom - containerSize.height)
+                     let projectedVisualBottom = visualCenterY + halfH
+                     if abs(projectedVisualBottom - containerSize.height) < snapThreshold {
+                         snappedY = predictedY - (projectedVisualBottom - containerSize.height)
                          newShowH = true; newActiveSnapY = 1.0
                      }
                 }
@@ -796,10 +811,28 @@ struct ZoomableImageView: View {
         // For positions, we need to know how a normalized (0-1) point in the PHOTO 
         // maps to the SCREEN.
         
+        var visualCenterOffset = CGSize.zero
+        if let img = (foreground ?? original), !isCropping {
+            let widthRatio = geometry.size.width / img.size.width
+            let heightRatio = geometry.size.height / img.size.height
+            let baseFitScale = min(widthRatio, heightRatio)
+            
+            let fullW = img.size.width * baseFitScale * fgScale
+            let fullH = img.size.height * baseFitScale * fgScale
+            
+            if let crop = appliedCropRect {
+                visualCenterOffset = CGSize(
+                    width: (crop.midX - 0.5) * fullW,
+                    height: (crop.midY - 0.5) * fullH
+                )
+            }
+        }
+        
         return PhotoTransform(
             canvasOffset: canvasOffset,
             canvasScale: canvasScale,
-            fgOffset: fgOffset,
+            fgOffset: CGSize(width: fgOffset.width + visualCenterOffset.width, 
+                             height: fgOffset.height + visualCenterOffset.height),
             fgScale: fgScale,
             rotation: rotation
         )
