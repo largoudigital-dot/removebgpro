@@ -898,6 +898,6 @@ class ImageProcessor {
             return nil
         }
         
-        return UIImage(cgImage: cgImage, scale: image.scale, orientation: .up)
+        return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
     }
 }
