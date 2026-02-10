@@ -117,6 +117,7 @@ struct EditorView: View {
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(2000)
+            }
         }
         .alert("Editor verlassen?", isPresented: $showingExitAlert) {
             Button("Abbrechen", role: .cancel) { }
@@ -141,7 +142,7 @@ struct EditorView: View {
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showingUnsplashPicker) {
-            UnsplashPickerView(onSelected: { image in
+            UnsplashPickerView(onSelect: { image in
                 viewModel.setBackgroundImage(image)
                 showingUnsplashPicker = false
             })
