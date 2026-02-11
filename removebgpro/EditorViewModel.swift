@@ -73,6 +73,7 @@ struct EditorState: Equatable {
     var stickerSize: CGFloat
     var stickerOutlineWidth: CGFloat
     var stickerOutlineColor: Color
+    var isStickerModeActive: Bool // ADDED
     // ADDED: UI Transformation State
     var fgScale: CGFloat
     var fgOffset: CGSize
@@ -105,6 +106,7 @@ struct EditorState: Equatable {
             lhs.stickerSize == rhs.stickerSize &&
             lhs.stickerOutlineWidth == rhs.stickerOutlineWidth &&
             lhs.stickerOutlineColor == rhs.stickerOutlineColor &&
+            lhs.isStickerModeActive == rhs.isStickerModeActive && // ADDED
             lhs.fgScale == rhs.fgScale &&
             lhs.fgOffset == rhs.fgOffset &&
             lhs.bgScale == rhs.bgScale &&
@@ -384,6 +386,7 @@ class EditorViewModel: ObservableObject {
             stickerSize: stickerSize,
             stickerOutlineWidth: stickerOutlineWidth,
             stickerOutlineColor: stickerOutlineColor,
+            isStickerModeActive: isStickerModeActive, // ADDED
             fgScale: fgScale,
             fgOffset: fgOffset,
             bgScale: bgScale,
@@ -465,6 +468,7 @@ class EditorViewModel: ObservableObject {
         stickerSize = state.stickerSize
         stickerOutlineWidth = state.stickerOutlineWidth
         stickerOutlineColor = state.stickerOutlineColor
+        isStickerModeActive = state.isStickerModeActive // ADDED
         
         fgScale = state.fgScale
         fgOffset = state.fgOffset
@@ -1030,7 +1034,8 @@ class EditorViewModel: ObservableObject {
             version: stateVersion,
             stickerOutlineWidth: stickerOutlineWidth,
             stickerOutlineColorHex: stickerOutlineColor.hex,
-            stickerSize: stickerSize // ADDED
+            stickerSize: stickerSize, // ADDED
+            isStickerModeActive: isStickerModeActive // ADDED
         )
         
         // Generate thumbnail
