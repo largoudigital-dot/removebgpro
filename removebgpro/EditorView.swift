@@ -709,8 +709,8 @@ struct StickerExportTabView: View {
             
             HStack(spacing: 6) {
                 sizeButton(size: 512, label: "512*512 px")
-                sizeButton(size: 96, label: "96*96 px")
-                sizeButton(size: 42, label: "42*42 px")
+                sizeButton(size: 256, label: "256*256 px")
+                sizeButton(size: 128, label: "128*128 px")
                 
                 // System Color Picker Button
                 InteractiveButton(action: {

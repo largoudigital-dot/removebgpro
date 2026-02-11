@@ -312,9 +312,9 @@ class EditorViewModel: ObservableObject {
     private func applyAutomaticStickerOutline() {
         if stickerSize == 512 {
             stickerOutlineWidth = 6
-        } else if stickerSize == 96 {
+        } else if stickerSize == 256 {
             stickerOutlineWidth = 4
-        } else if stickerSize == 42 {
+        } else if stickerSize == 128 {
             stickerOutlineWidth = 2
         } else {
             // Default or fallback
@@ -325,10 +325,10 @@ class EditorViewModel: ObservableObject {
     var stickerUIScale: CGFloat {
         // 512 is our reference "full" size for the UI canvas
         // 96 is the small size. Let's make it visually distinct but readable.
-        if stickerSize == 42 {
-            return 0.15 // 15% of container size (very small)
-        } else if stickerSize == 96 {
+        if stickerSize == 128 {
             return 0.4 // 40% of container size
+        } else if stickerSize == 256 {
+            return 0.7 // 70% of container size
         }
         return 1.0 // 100% of container size
     }
