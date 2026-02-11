@@ -137,6 +137,7 @@ class EditorViewModel: ObservableObject {
         didSet {
             if selectedTab == .stickers {
                 isStickerModeActive = true
+                applyAutomaticStickerOutline()
             }
         }
     }
@@ -303,6 +304,19 @@ class EditorViewModel: ObservableObject {
             DispatchQueue.main.async {
                 self.updateProcessedImage()
             }
+        }
+    }
+    
+    private func applyAutomaticStickerOutline() {
+        if stickerSize == 512 {
+            stickerOutlineWidth = 6
+        } else if stickerSize == 96 {
+            stickerOutlineWidth = 4
+        } else if stickerSize == 21 {
+            stickerOutlineWidth = 2
+        } else {
+            // Default or fallback
+            stickerOutlineWidth = 4
         }
     }
     
@@ -562,6 +576,7 @@ class EditorViewModel: ObservableObject {
     
     func applyStickerSize(_ size: CGFloat) {
         self.stickerSize = size
+        applyAutomaticStickerOutline()
         updateProcessedImage()
     }
     
