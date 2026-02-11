@@ -7,6 +7,11 @@ class BackgroundRemovalService {
     private let endpoint = "https://api.remove.bg/v1.0/removebg"
     
     func removeBackground(from image: UIImage) async throws -> UIImage? {
+        // API DEAKTIVIERT - Gibt einfach das Original-Bild zurück
+        print("⚠️ BackgroundRemovalService: API ist deaktiviert - Original-Bild wird zurückgegeben")
+        return image
+        
+        /* ORIGINAL API CODE - DEAKTIVIERT
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
             throw NSError(domain: "BackgroundRemovalService", code: 0, userInfo: [NSLocalizedDescriptionKey: "Bilddaten konnten nicht konvertiert werden"])
         }
@@ -47,5 +52,6 @@ class BackgroundRemovalService {
         
         print("✅ BackgroundRemovalService: Background removed successfully")
         return UIImage(data: data)
+        */
     }
 }

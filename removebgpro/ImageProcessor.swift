@@ -220,9 +220,50 @@ class ImageProcessor {
         return rotatedImage
     }
     
-    // Crop image
+    // Fix orientation by redrawing (Bakes in the orientation)
+    func fixedOrientation(_ image: UIImage) -> UIImage {
+        if image.imageOrientation == .up {
+            return image
+        }
+        
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return normalizedImage ?? image
+    }
+    
+    // Crop image (Destructive)
+    func cropImage(image: UIImage, rect: CGRect) -> UIImage? {
+        // IMPORTANT: We must normalize orientation before cropping with CGImage
+        // because cgImage.cropping(to:) ignores UIImage.orientation
+        let normalized = fixedOrientation(image)
+        
+        guard let cgImage = normalized.cgImage else { return nil }
+        guard let cropped = cgImage.cropping(to: rect) else { return nil }
+        
+        return UIImage(cgImage: cropped, scale: image.scale, orientation: .up)
+    }
+    
+    // Crop with normalized rect (0.0 to 1.0)
+    func cropImageNormalized(image: UIImage, normalizedRect: CGRect) -> UIImage? {
+        let imageSize = image.size
+        let scale = image.scale
+        
+        let pixelRect = CGRect(
+            x: normalizedRect.origin.x * imageSize.width * scale,
+            y: normalizedRect.origin.y * imageSize.height * scale,
+            width: normalizedRect.size.width * imageSize.width * scale,
+            height: normalizedRect.size.height * imageSize.height * scale
+        )
+        
+        return cropImage(image: image, rect: pixelRect)
+    }
+    
+    // Crop to ratio (Helper)
     func cropImage(_ image: UIImage, to ratio: CGFloat) -> UIImage? {
-        let cgImage = image.cgImage!
+        guard let cgImage = image.cgImage else { return image }
         let width = CGFloat(cgImage.width)
         let height = CGFloat(cgImage.height)
         
@@ -231,23 +272,18 @@ class ImageProcessor {
         var newHeight = height
         
         if currentRatio > ratio {
-            // Image is wider than target ratio
             newWidth = height * ratio
         } else {
-            // Image is taller than target ratio
             newHeight = width / ratio
         }
         
         let x = (width - newWidth) / 2
         let y = (height - newHeight) / 2
-        
-        // x, y, newWidth, newHeight are already in pixels (from cgImage.width/height)
         let cropRect = CGRect(x: x, y: y, width: newWidth, height: newHeight)
         
-        guard let croppedCgImage = cgImage.cropping(to: cropRect) else { return image }
-        return UIImage(cgImage: croppedCgImage, scale: image.scale, orientation: image.imageOrientation)
+        return cropImage(image: image, rect: cropRect) ?? image
     }
-    
+
     // Crop to custom size
     func cropToSize(_ image: UIImage, width targetWidth: CGFloat, height targetHeight: CGFloat) -> UIImage? {
         let ratio = targetWidth / targetHeight
@@ -347,44 +383,23 @@ class ImageProcessor {
              }
         }
         
-        // 0. Apply normalized crop rect if provided (Free Crop)
+        // 0. The foreground image is now already cropped destructively if a crop was applied.
+        // We no longer need to apply a normalized crop rect here during the live processing pipeline 
+        // because the 'original' passed in (which is the viewModel.foregroundImage) is already the cropped version.
+        /*
         if let rect = cropRect {
-             guard let cgImage = processedImage.cgImage else { return processedImage }
-             
-             // IMPORTANT: Use UIImage.size which accounts for orientation,
-             // not cgImage.width/height which are raw pixel dimensions
-             let imageSize = processedImage.size
-             
-             // Convert normalized coordinates (0-1) to actual pixel coordinates
-             let x = rect.minX * imageSize.width
-             let y = rect.minY * imageSize.height
-             let w = rect.width * imageSize.width
-             let h = rect.height * imageSize.height
-             
-             // Create crop rectangle in image coordinate space
-             let cropZone = CGRect(x: x, y: y, width: w, height: h)
-             
-             // Scale the crop zone to match the actual CGImage pixel dimensions
-             let scale = processedImage.scale
-             let scaledCropZone = CGRect(
-                 x: cropZone.origin.x * scale,
-                 y: cropZone.origin.y * scale,
-                 width: cropZone.size.width * scale,
-                 height: cropZone.size.height * scale
-             )
-             
-             if let croppedCg = cgImage.cropping(to: scaledCropZone) {
-                 processedImage = UIImage(cgImage: croppedCg, scale: processedImage.scale, orientation: processedImage.imageOrientation)
-             }
+             // ... legacy visual crop code removed ...
         }
+        */
         
-        // 1. Crop foreground first if needed
+        // 1. Aspect ratio crops are typically handled by applying a specific ratio during the crop mode.
+        // If we still have an aspectRatio/customSize here, we crop now.
         if let ratio = aspectRatio {
             if let cropped = cropImage(processedImage, to: ratio) {
                 processedImage = cropped
             }
         } else if let size = customSize {
-            if let cropped = cropToSize(processedImage, width: size.width, height: size.height) {
+            if let ratio = Optional(size.width / size.height), let cropped = cropImage(processedImage, to: ratio) {
                 processedImage = cropped
             }
         }
@@ -884,11 +899,9 @@ class ImageProcessor {
         return UIImage(cgImage: trimmedCgImage, scale: image.scale, orientation: image.imageOrientation)
     }
     
-    // MARK: - WhatsApp Sticker Generation
     func generateStickerImage(from image: UIImage, targetSize: CGFloat = 512, outlineWidth: CGFloat = 0, outlineColor: Color = .white) -> UIImage? {
-        // 0. Find "New Corners" by trimming transparency
-        // This ensures the sticker is tightly cropped to the actual content
-        let trimmedImage = trimTransparency(from: image) ?? image
+        // Use the image as is (removed automatic trimTransparency)
+        let trimmedImage = image
         
         // 1. Determine how much space the outline will take
         let outlinePadding = outlineWidth > 0 ? (outlineWidth + 4) : 0

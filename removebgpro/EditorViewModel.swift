@@ -137,12 +137,6 @@ class EditorViewModel: ObservableObject {
         didSet {
             if selectedTab == .stickers {
                 isStickerModeActive = true
-                // Automatically trim transparency when entering stickers tab
-                // to "find new corners" of the subject.
-                if let fg = foregroundImage, let trimmed = imageProcessor.trimTransparency(from: fg) {
-                    foregroundImage = trimmed
-                    updateProcessedImage()
-                }
             }
         }
     }
@@ -163,6 +157,7 @@ class EditorViewModel: ObservableObject {
     // Crop State
     @Published var isCropping = false
     @Published var appliedCropRect: CGRect? = nil
+    @Published var targetEditorScale: CGFloat? = nil // Scale to apply after destructive crop
     
     // Sticker State
     @Published var stickers: [Sticker] = []
@@ -244,11 +239,11 @@ class EditorViewModel: ObservableObject {
             cropRect: appliedCropRect,
             stickers: stickers,
             textItems: textItems,
-            shadowRadius: (selectedTab == .stickers) ? 0 : shadowRadius,
-            shadowX: (selectedTab == .stickers) ? 0 : shadowX,
-            shadowY: (selectedTab == .stickers) ? 0 : shadowY,
+            shadowRadius: shadowRadius,
+            shadowX: shadowX,
+            shadowY: shadowY,
             shadowColor: shadowColor,
-            shadowOpacity: (selectedTab == .stickers) ? 0 : shadowOpacity,
+            shadowOpacity: shadowOpacity,
             shouldIncludeShadow: true,
             fgScale: fgScale,
             fgOffset: fgOffset,
@@ -486,11 +481,52 @@ class EditorViewModel: ObservableObject {
     }
     
     func applyCrop(_ rect: CGRect) {
-        // Now "rect" is relative to the FULL processed image,
-        // because we show the full image in crop mode.
+        // "rect" is normalized (0.0 to 1.0) relative to the image being cropped.
+        guard let baseImage = foregroundImage ?? originalImage else { return }
+        
         didChange()
-        appliedCropRect = rect
-        isCropping = false // Exit crop mode so the cropped image becomes visible
+        
+        // 1. CALCULATE TARGET SCALE BEFORE CROPPING
+        let targetScale = rect.width
+        
+        // 2. CALCULATE POSITION SHIFT TO PRESERVE LOCATION
+        // Calculate the current visual dimensions on the canvas
+        let widthRatio = uiCanvasSize.width / baseImage.size.width
+        let heightRatio = uiCanvasSize.height / baseImage.size.height
+        let baseFitScale = min(widthRatio, heightRatio)
+        
+        // We use the same stable scale logic as in ZoomableImageView
+        // If we have a previous targetEditorScale, we should account for it, 
+        // but normally editorScale starts at baseFitScale.
+        let currentVisualW = baseImage.size.width * baseFitScale * (targetEditorScale ?? 1.0) * fgScale
+        let currentVisualH = baseImage.size.height * baseFitScale * (targetEditorScale ?? 1.0) * fgScale
+        
+        // Calculate how much the center has moved in visual pixels
+        let shiftX = (rect.midX - 0.5) * currentVisualW
+        let shiftY = (rect.midY - 0.5) * currentVisualH
+        
+        if let newImage = imageProcessor.cropImageNormalized(image: baseImage, normalizedRect: rect) {
+            // DESTRUCTIVE CROP:
+            self.foregroundImage = newImage
+            self.appliedCropRect = nil
+            
+            // Set the target scale for ZoomableImageView to use
+            self.targetEditorScale = (targetEditorScale ?? 1.0) * targetScale
+            
+            // ADJUST POSITION: Instead of resetting to .zero, we add the shift
+            // This compensates for the fact that the new image center is the old crop center
+            self.fgOffset = CGSize(
+                width: self.fgOffset.width + shiftX,
+                height: self.fgOffset.height + shiftY
+            )
+            
+            // Reset fgScale because the crop is now "baked in" at the new base size
+            self.fgScale = 1.0
+            
+            print("✅ Destructive Crop Applied: New Size \(newImage.size), Target Scale: \(self.targetEditorScale ?? 1.0), Shift: \(shiftX), \(shiftY)")
+        }
+        
+        isCropping = false
         updateProcessedImage()
     }
     
@@ -526,16 +562,6 @@ class EditorViewModel: ObservableObject {
     
     func applyStickerSize(_ size: CGFloat) {
         self.stickerSize = size
-        
-        // Manual adaptive outline width logic triggered only by size buttons
-        if size == 512 {
-            stickerOutlineWidth = 8
-        } else if size == 96 {
-            stickerOutlineWidth = 6
-        } else if size == 21 {
-            stickerOutlineWidth = 4
-        }
-        
         updateProcessedImage()
     }
     
