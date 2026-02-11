@@ -346,14 +346,17 @@ struct EditorView: View {
             // Determine the target aspect ratio for the CANVAS container
             let isStickerMode = viewModel.selectedTab == .stickers || viewModel.isStickerModeActive
             let targetAspectRatio: CGFloat = {
+                // 1. If a specific manual ratio is chosen (anything other than .original), respect it.
+                if let manualRatio = viewModel.selectedAspectRatio.ratio {
+                    return manualRatio
+                }
+                
+                // 2. If 'Original' is selected while in Sticker Mode, default to 1:1 (Square).
                 if isStickerMode {
-                    return 1.0 // Force square for stickers (active or legacy)
+                    return 1.0
                 }
-                if let ratio = viewModel.selectedAspectRatio.ratio {
-                    return ratio
-                }
-                // Use the ORIGINAL image aspect ratio as the base for the canvas
-                // to prevent it from resizing when the processed image (crop) changes.
+                
+                // 3. Fallback to the original image's aspect ratio.
                 return originalImageAspectRatio
             }()
             
