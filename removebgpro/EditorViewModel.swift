@@ -314,7 +314,7 @@ class EditorViewModel: ObservableObject {
             stickerOutlineWidth = 6
         } else if stickerSize == 96 {
             stickerOutlineWidth = 4
-        } else if stickerSize == 21 {
+        } else if stickerSize == 42 {
             stickerOutlineWidth = 2
         } else {
             // Default or fallback
@@ -325,7 +325,7 @@ class EditorViewModel: ObservableObject {
     var stickerUIScale: CGFloat {
         // 512 is our reference "full" size for the UI canvas
         // 96 is the small size. Let's make it visually distinct but readable.
-        if stickerSize == 21 {
+        if stickerSize == 42 {
             return 0.15 // 15% of container size (very small)
         } else if stickerSize == 96 {
             return 0.4 // 40% of container size
