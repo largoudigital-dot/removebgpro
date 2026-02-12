@@ -139,6 +139,10 @@ class EditorViewModel: ObservableObject {
         didSet {
             if selectedTab == .stickers {
                 isStickerModeActive = true
+                // Auto-select 512px as default sticker size
+                if stickerSize != 512 && stickerSize != 256 && stickerSize != 128 {
+                    stickerSize = 512
+                }
                 applyAutomaticStickerOutline()
             }
         }
