@@ -498,50 +498,31 @@ class EditorViewModel: ObservableObject {
         isCropping = false
     }
     
+    
     func applyCrop(_ rect: CGRect) {
-        // "rect" is normalized (0.0 to 1.0) relative to the image being cropped.
+        // "rect" is normalized (0.0 to 1.0) relative to the displayed image in the view
         guard let baseImage = foregroundImage ?? originalImage else { return }
         
         didChange()
         
-        // 1. CALCULATE TARGET SCALE BEFORE CROPPING
-        let targetScale = rect.width
-        
-        // 2. CALCULATE POSITION SHIFT TO PRESERVE LOCATION
-        // Calculate the current visual dimensions on the canvas
-        let widthRatio = uiCanvasSize.width / baseImage.size.width
-        let heightRatio = uiCanvasSize.height / baseImage.size.height
-        let baseFitScale = min(widthRatio, heightRatio)
-        
-        // We use the same stable scale logic as in ZoomableImageView
-        // If we have a previous targetEditorScale, we should account for it, 
-        // but normally editorScale starts at baseFitScale.
-        let currentVisualW = baseImage.size.width * baseFitScale * (targetEditorScale ?? 1.0) * fgScale
-        let currentVisualH = baseImage.size.height * baseFitScale * (targetEditorScale ?? 1.0) * fgScale
-        
-        // Calculate how much the center has moved in visual pixels
-        let shiftX = (rect.midX - 0.5) * currentVisualW
-        let shiftY = (rect.midY - 0.5) * currentVisualH
-        
-        if let newImage = imageProcessor.cropImageNormalized(image: baseImage, normalizedRect: rect) {
-            // DESTRUCTIVE CROP:
+        // Use the new cropImageNormalized with proper coordinate transformation
+        if let newImage = imageProcessor.cropImageNormalized(
+            image: baseImage,
+            normalizedRect: rect,
+            viewSize: uiCanvasSize,
+            fgScale: fgScale,
+            fgOffset: fgOffset
+        ) {
+            // DESTRUCTIVE CROP: Replace the image with the cropped version
             self.foregroundImage = newImage
             self.appliedCropRect = nil
             
-            // Set the target scale for ZoomableImageView to use
-            self.targetEditorScale = (targetEditorScale ?? 1.0) * targetScale
-            
-            // ADJUST POSITION: Instead of resetting to .zero, we add the shift
-            // This compensates for the fact that the new image center is the old crop center
-            self.fgOffset = CGSize(
-                width: self.fgOffset.width + shiftX,
-                height: self.fgOffset.height + shiftY
-            )
-            
-            // Reset fgScale because the crop is now "baked in" at the new base size
+            // Reset transformations since crop is now "baked in"
             self.fgScale = 1.0
+            self.fgOffset = .zero
+            self.targetEditorScale = nil
             
-            print("✅ Destructive Crop Applied: New Size \(newImage.size), Target Scale: \(self.targetEditorScale ?? 1.0), Shift: \(shiftX), \(shiftY)")
+            print("✅ Crop Applied: New Size \(newImage.size)")
         }
         
         isCropping = false
