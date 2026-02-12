@@ -246,80 +246,19 @@ class ImageProcessor {
         return UIImage(cgImage: cropped, scale: image.scale, orientation: .up)
     }
     
-    
-    // Helper: Calculate AspectFit frame (where image actually appears in view)
-    private func imageFrame(in viewSize: CGSize, imageSize: CGSize) -> CGRect {
-        let imageRatio = imageSize.width / imageSize.height
-        let viewRatio = viewSize.width / viewSize.height
+    // Crop with normalized rect (0.0 to 1.0)
+    func cropImageNormalized(image: UIImage, normalizedRect: CGRect) -> UIImage? {
+        let imageSize = image.size
+        let scale = image.scale
         
-        if imageRatio > viewRatio {
-            // Image is wider - fit to width
-            let width = viewSize.width
-            let height = width / imageRatio
-            let y = (viewSize.height - height) / 2
-            return CGRect(x: 0, y: y, width: width, height: height)
-        } else {
-            // Image is taller - fit to height
-            let height = viewSize.height
-            let width = height * imageRatio
-            let x = (viewSize.width - width) / 2
-            return CGRect(x: x, y: 0, width: width, height: height)
-        }
-    }
-    
-    // Crop with normalized rect (0.0 to 1.0) - PROPER coordinate transformation
-    func cropImageNormalized(
-        image: UIImage,
-        normalizedRect: CGRect,
-        viewSize: CGSize,
-        fgScale: CGFloat = 1.0,
-        fgOffset: CGSize = .zero
-    ) -> UIImage? {
-        guard let cgImage = image.cgImage else { return nil }
-        
-        // 1. Get actual image pixel size
-        let imgSize = CGSize(width: cgImage.width, height: cgImage.height)
-        
-        // 2. Calculate AspectFit frame (where image actually appears in view)
-        let imageFrameInView = imageFrame(in: viewSize, imageSize: imgSize)
-        
-        // 3. Convert normalized rect to view coordinates (relative to image frame)
-        var cropRectInView = CGRect(
-            x: normalizedRect.origin.x * imageFrameInView.width,
-            y: normalizedRect.origin.y * imageFrameInView.height,
-            width: normalizedRect.width * imageFrameInView.width,
-            height: normalizedRect.height * imageFrameInView.height
+        let pixelRect = CGRect(
+            x: normalizedRect.origin.x * imageSize.width * scale,
+            y: normalizedRect.origin.y * imageSize.height * scale,
+            width: normalizedRect.size.width * imageSize.width * scale,
+            height: normalizedRect.size.height * imageSize.height * scale
         )
         
-        // 4. Apply INVERSE transformations in REVERSE order
-        // SwiftUI applies: offset → scale
-        // So we reverse: subtract (offset * scale), then divide by scale
-        
-        // 4a. Subtract effective offset (fgOffset is scaled by fgScale in SwiftUI)
-        cropRectInView.origin.x -= (fgOffset.width * fgScale)
-        cropRectInView.origin.y -= (fgOffset.height * fgScale)
-        
-        // 4b. Divide by scale to get back to base coordinates
-        cropRectInView.origin.x /= fgScale
-        cropRectInView.origin.y /= fgScale
-        cropRectInView.size.width /= fgScale
-        cropRectInView.size.height /= fgScale
-        
-        // 5. Scale to image pixels
-        let scaleX = imgSize.width / imageFrameInView.width
-        let scaleY = imgSize.height / imageFrameInView.height
-        
-        let cropRectInImage = CGRect(
-            x: cropRectInView.origin.x * scaleX,
-            y: cropRectInView.origin.y * scaleY,
-            width: cropRectInView.size.width * scaleX,
-            height: cropRectInView.size.height * scaleY
-        )
-        
-        // 6. Crop using CGImage (no resize, no aspect ratio change!)
-        guard let cropped = cgImage.cropping(to: cropRectInImage) else { return nil }
-        
-        return UIImage(cgImage: cropped, scale: image.scale, orientation: image.imageOrientation)
+        return cropImage(image: image, rect: pixelRect)
     }
     
     // Crop to ratio (Helper)
