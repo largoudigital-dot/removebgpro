@@ -199,43 +199,30 @@ struct ZoomableImageView: View {
                         )
                         
                         Group {
-                            if isCropping {
-                                // While cropping, show the full image with the crop overlay
-                                ZStack {
-                                    Image(uiImage: displayImage)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
+                            // Unified Rendering Layer
+                            // We use a stored editorScale to keep the workspace stable
+                            // so that cropped images appear smaller as intended.
+                            let currentScale: CGFloat = {
+                                if let stored = editorScale {
+                                    return stored
+                                } else {
+                                    // Calculate once (usually on first load or after background removal)
+                                    let widthRatio = geometry.size.width / displayImage.size.width
+                                    let heightRatio = geometry.size.height / displayImage.size.height
+                                    let scale = min(widthRatio, heightRatio)
                                     
-                                    if let commit = onCropCommit {
-                                        CropOverlayView(initialRect: appliedCropRect ?? CGRect(x: 0, y: 0, width: 1, height: 1), onCommit: commit)
+                                    // Dispatch to state to persist it
+                                    DispatchQueue.main.async {
+                                        self.editorScale = scale
                                     }
+                                    return scale
                                 }
-                                .scaleEffect(fgScale)
-                                .offset(fgOffset)
-                            } else {
-                                // Normal mode: image is already cropped destructively
-                                // We use a stored editorScale to keep the workspace stable
-                                // so that cropped images appear smaller as intended.
-                                let currentScale: CGFloat = {
-                                    if let stored = editorScale {
-                                        return stored
-                                    } else {
-                                        // Calculate once (usually on first load or after background removal)
-                                        let widthRatio = geometry.size.width / displayImage.size.width
-                                        let heightRatio = geometry.size.height / displayImage.size.height
-                                        let scale = min(widthRatio, heightRatio)
-                                        
-                                        // Dispatch to state to persist it
-                                        DispatchQueue.main.async {
-                                            self.editorScale = scale
-                                        }
-                                        return scale
-                                    }
-                                }()
-                                
-                                let visualWidth = displayImage.size.width * currentScale
-                                let visualHeight = displayImage.size.height * currentScale
-                                
+                            }()
+                            
+                            let visualWidth = displayImage.size.width * currentScale
+                            let visualHeight = displayImage.size.height * currentScale
+                            
+                            ZStack {
                                 Image(uiImage: displayImage)
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
@@ -250,9 +237,15 @@ struct ZoomableImageView: View {
                                         x: shadowX * uiScale,
                                         y: shadowY * uiScale
                                     )
-                                    .scaleEffect(fgScale)
-                                    .offset(fgOffset)
+                                
+                                // Overlay crop UI if active
+                                if isCropping, let commit = onCropCommit {
+                                    CropOverlayView(initialRect: appliedCropRect ?? CGRect(x: 0, y: 0, width: 1, height: 1), onCommit: commit)
+                                        .frame(width: visualWidth, height: visualHeight)
+                                }
                             }
+                            .scaleEffect(fgScale)
+                            .offset(fgOffset)
                         }
                         .onAppear {
                             // Initial calculation
