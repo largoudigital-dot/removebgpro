@@ -18,7 +18,7 @@ struct ZoomableImageView: View {
     let isCropping: Bool
     let appliedCropRect: CGRect? // ADDED: Cumulative applied crop
     let onCropCommit: ((CGRect) -> Void)?
-    @Binding var absoluteVisualWidth: CGFloat? // Absolute width in points on the screen
+    let targetEditorScale: CGFloat? // ADDED: Target scale after crop
     @Binding var stickers: [Sticker]
     @Binding var selectedStickerId: UUID?
     let onDeleteSticker: (UUID) -> Void
@@ -84,7 +84,7 @@ struct ZoomableImageView: View {
         bgOffset: Binding<CGSize>,
         canvasScale: Binding<CGFloat>,
         canvasOffset: Binding<CGSize>,
-        absoluteVisualWidth: Binding<CGFloat?>
+        targetEditorScale: CGFloat? = nil
     ) {
         self.foreground = foreground
         self.background = background
@@ -119,7 +119,7 @@ struct ZoomableImageView: View {
         self._bgOffset = bgOffset
         self._canvasScale = canvasScale
         self._canvasOffset = canvasOffset
-        self._absoluteVisualWidth = absoluteVisualWidth
+        self.targetEditorScale = targetEditorScale
     }
     
     @State private var showVGuide = false
@@ -129,6 +129,8 @@ struct ZoomableImageView: View {
     @State private var guideColor: Color = .yellow // Default to yellow
     @State private var interactingLayer: SelectedLayer? = nil
     
+    // Stable scaling for the workspace
+    @State private var editorScale: CGFloat? = nil
     
     private let snapThreshold: CGFloat = 10
     
@@ -197,26 +199,28 @@ struct ZoomableImageView: View {
                         )
                         
                         Group {
-                            // Unified Rendering Layer (Absolute Scaling)
-                            let visualWidth: CGFloat = {
-                                if let width = absoluteVisualWidth {
-                                    // Apply user zoom (fgScale) to the absolute width
-                                    return width * fgScale
+                            // Unified Rendering Layer
+                            // We use a stored editorScale to keep the workspace stable
+                            // so that cropped images appear smaller as intended.
+                            let currentScale: CGFloat = {
+                                if let stored = editorScale {
+                                    return stored
                                 } else {
-                                    // Calculate initial fit-width once
+                                    // Calculate once (usually on first load or after background removal)
                                     let widthRatio = geometry.size.width / displayImage.size.width
                                     let heightRatio = geometry.size.height / displayImage.size.height
                                     let scale = min(widthRatio, heightRatio)
-                                    let initialWidth = displayImage.size.width * scale
                                     
+                                    // Dispatch to state to persist it
                                     DispatchQueue.main.async {
-                                        self.absoluteVisualWidth = initialWidth
+                                        self.editorScale = scale
                                     }
-                                    return initialWidth * fgScale
+                                    return scale
                                 }
                             }()
                             
-                            let visualHeight = visualWidth / (displayImage.size.width / displayImage.size.height)
+                            let visualWidth = displayImage.size.width * currentScale
+                            let visualHeight = displayImage.size.height * currentScale
                             
                             ZStack {
                                 Image(uiImage: displayImage)
@@ -240,11 +244,40 @@ struct ZoomableImageView: View {
                                         .frame(width: visualWidth, height: visualHeight)
                                 }
                             }
+                            .scaleEffect(fgScale)
                             .offset(fgOffset)
+                        }
+                        .onAppear {
+                            // Initial calculation
+                            if editorScale == nil {
+                                let widthRatio = geometry.size.width / displayImage.size.width
+                                let heightRatio = geometry.size.height / displayImage.size.height
+                                editorScale = min(widthRatio, heightRatio)
+                            }
                         }
                         .onChange(of: original) { _ in
                             // Reset when loading a completely new image
-                            absoluteVisualWidth = nil
+                            editorScale = nil
+                        }
+                        .onChange(of: targetEditorScale) { newTargetScale in
+                            // When a crop is applied, the ViewModel sets targetEditorScale
+                            // to preserve the visual size of the cropped area
+                            guard let newTargetScale = newTargetScale else { return }
+                            
+                            // Calculate the base fit scale for the container
+                            let widthRatio = geometry.size.width / displayImage.size.width
+                            let heightRatio = geometry.size.height / displayImage.size.height
+                            let baseFitScale = min(widthRatio, heightRatio)
+                            
+                            // Apply the target scale (which is the crop rect width as a fraction)
+                            // to the base fit scale to get the final editor scale
+                            let finalScale = baseFitScale * newTargetScale
+                            
+                            DispatchQueue.main.async {
+                                self.editorScale = finalScale
+                            }
+                            
+                            print("📐 Applied target scale: \\(newTargetScale), base: \\(baseFitScale), final: \\(finalScale)")
                         }
                         .gesture(layerGesture(for: .foreground, containerSize: geometry.size))
                     }

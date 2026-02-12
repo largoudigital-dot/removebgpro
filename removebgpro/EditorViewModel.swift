@@ -160,7 +160,7 @@ class EditorViewModel: ObservableObject {
     // Crop State
     @Published var isCropping = false
     @Published var appliedCropRect: CGRect? = nil
-    @Published var absoluteVisualWidth: CGFloat? = nil // Absolute width in points on the screen
+    @Published var targetEditorScale: CGFloat? = nil // Scale to apply after destructive crop
     
     // Sticker State
     @Published var stickers: [Sticker] = []
@@ -255,8 +255,7 @@ class EditorViewModel: ObservableObject {
             uiCanvasSize: uiCanvasSize,
             referenceSize: originalImage?.size,
             outlineWidth: stickerOutlineWidth,
-            outlineColor: stickerOutlineColor,
-            visualWidth: absoluteVisualWidth
+            outlineColor: stickerOutlineColor
         )
     }
     
@@ -505,33 +504,35 @@ class EditorViewModel: ObservableObject {
         
         didChange()
         
-        // 1. CALCULATE POSITION SHIFT IN VISUAL PIXELS
-        // The current visual width includes fgScale: visualWidth = absoluteVisualWidth * fgScale
-        let currentWidth: CGFloat
-        if let absWidth = absoluteVisualWidth {
-            currentWidth = absWidth * fgScale
-        } else {
-            currentWidth = uiCanvasSize.width
-        }
-        let currentHeight = currentWidth / (baseImage.size.width / baseImage.size.height)
+        // 1. CALCULATE TARGET SCALE BEFORE CROPPING
+        let targetScale = rect.width
         
-        // Calculate how much the center has moved in visual points
-        let shiftX = (rect.midX - 0.5) * currentWidth
-        let shiftY = (rect.midY - 0.5) * currentHeight
+        // 2. CALCULATE POSITION SHIFT TO PRESERVE LOCATION
+        // Calculate the current visual dimensions on the canvas
+        let widthRatio = uiCanvasSize.width / baseImage.size.width
+        let heightRatio = uiCanvasSize.height / baseImage.size.height
+        let baseFitScale = min(widthRatio, heightRatio)
+        
+        // We use the same stable scale logic as in ZoomableImageView
+        // If we have a previous targetEditorScale, we should account for it, 
+        // but normally editorScale starts at baseFitScale.
+        let currentVisualW = baseImage.size.width * baseFitScale * (targetEditorScale ?? 1.0) * fgScale
+        let currentVisualH = baseImage.size.height * baseFitScale * (targetEditorScale ?? 1.0) * fgScale
+        
+        // Calculate how much the center has moved in visual pixels
+        let shiftX = (rect.midX - 0.5) * currentVisualW
+        let shiftY = (rect.midY - 0.5) * currentVisualH
         
         if let newImage = imageProcessor.cropImageNormalized(image: baseImage, normalizedRect: rect) {
             // DESTRUCTIVE CROP:
             self.foregroundImage = newImage
             self.appliedCropRect = nil
             
-            // 2. ADJUST ABSOLUTE SIZE
-            // The new absoluteVisualWidth should be: (old * fgScale * rect.width) / 1.0
-            // Because we're resetting fgScale to 1.0, we need to "bake in" the current scale
-            if let oldWidth = absoluteVisualWidth {
-                self.absoluteVisualWidth = oldWidth * fgScale * rect.width
-            }
+            // Set the target scale for ZoomableImageView to use
+            self.targetEditorScale = (targetEditorScale ?? 1.0) * targetScale
             
-            // 3. ADJUST POSITION
+            // ADJUST POSITION: Instead of resetting to .zero, we add the shift
+            // This compensates for the fact that the new image center is the old crop center
             self.fgOffset = CGSize(
                 width: self.fgOffset.width + shiftX,
                 height: self.fgOffset.height + shiftY
@@ -540,7 +541,7 @@ class EditorViewModel: ObservableObject {
             // Reset fgScale because the crop is now "baked in" at the new base size
             self.fgScale = 1.0
             
-            print("✅ Stable Crop Applied: New Size \(newImage.size), Absolute Width: \(self.absoluteVisualWidth ?? 0), Shift: \(shiftX), \(shiftY)")
+            print("✅ Destructive Crop Applied: New Size \(newImage.size), Target Scale: \(self.targetEditorScale ?? 1.0), Shift: \(shiftX), \(shiftY)")
         }
         
         isCropping = false

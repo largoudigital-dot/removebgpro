@@ -40,7 +40,6 @@ struct ProcessingParameters: Equatable {
     var referenceSize: CGSize? = nil
     var outlineWidth: CGFloat = 0
     var outlineColor: Color = .white
-    var visualWidth: CGFloat? = nil
 }
 
 enum EffectType: String, CaseIterable, Identifiable {
