@@ -283,29 +283,37 @@ class ImageProcessor {
         // 2. Calculate AspectFit frame (where image actually appears in view)
         let imageFrameInView = imageFrame(in: viewSize, imageSize: imgSize)
         
-        // 3. Convert normalized rect to view coordinates
-        let cropRectInView = CGRect(
+        // 3. Convert normalized rect to view coordinates (relative to image frame)
+        var cropRectInView = CGRect(
             x: normalizedRect.origin.x * imageFrameInView.width,
             y: normalizedRect.origin.y * imageFrameInView.height,
             width: normalizedRect.width * imageFrameInView.width,
             height: normalizedRect.height * imageFrameInView.height
         )
         
-        // 4. Account for zoom and pan (remove transformations)
-        let adjustedX = (cropRectInView.origin.x - fgOffset.width) / fgScale
-        let adjustedY = (cropRectInView.origin.y - fgOffset.height) / fgScale
-        let adjustedWidth = cropRectInView.width / fgScale
-        let adjustedHeight = cropRectInView.height / fgScale
+        // 4. Apply INVERSE transformations in REVERSE order
+        // SwiftUI applies: offset → scale
+        // So we reverse: subtract (offset * scale), then divide by scale
+        
+        // 4a. Subtract effective offset (fgOffset is scaled by fgScale in SwiftUI)
+        cropRectInView.origin.x -= (fgOffset.width * fgScale)
+        cropRectInView.origin.y -= (fgOffset.height * fgScale)
+        
+        // 4b. Divide by scale to get back to base coordinates
+        cropRectInView.origin.x /= fgScale
+        cropRectInView.origin.y /= fgScale
+        cropRectInView.size.width /= fgScale
+        cropRectInView.size.height /= fgScale
         
         // 5. Scale to image pixels
         let scaleX = imgSize.width / imageFrameInView.width
         let scaleY = imgSize.height / imageFrameInView.height
         
         let cropRectInImage = CGRect(
-            x: adjustedX * scaleX,
-            y: adjustedY * scaleY,
-            width: adjustedWidth * scaleX,
-            height: adjustedHeight * scaleY
+            x: cropRectInView.origin.x * scaleX,
+            y: cropRectInView.origin.y * scaleY,
+            width: cropRectInView.size.width * scaleX,
+            height: cropRectInView.size.height * scaleY
         )
         
         // 6. Crop using CGImage (no resize, no aspect ratio change!)
