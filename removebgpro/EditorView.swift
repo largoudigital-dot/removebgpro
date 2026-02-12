@@ -439,7 +439,7 @@ struct EditorView: View {
                             bgOffset: $viewModel.bgOffset,
                             canvasScale: $viewModel.canvasScale,
                             canvasOffset: $viewModel.canvasOffset,
-                            targetEditorScale: viewModel.targetEditorScale
+                            absoluteVisualWidth: $viewModel.absoluteVisualWidth
                         )
                         .id("photo-\(viewModel.rotation)-\(viewModel.originalImage?.hashValue ?? 0)")
                     }
