@@ -469,7 +469,7 @@ struct EditorView: View {
                     }
                 }
                 .frame(width: fitSize.width, height: fitSize.height)
-                .background(Color(white: 0.95))
+                .background(CheckerboardView())
                 .clipped()
                 .onChange(of: fitSize) { newSize in
                     viewModel.uiCanvasSize = newSize
