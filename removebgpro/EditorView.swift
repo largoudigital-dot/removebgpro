@@ -330,9 +330,11 @@ struct EditorView: View {
             let availableWidth = geometry.size.width - 2 // Considering horizontal padding
             let availableHeight = geometry.size.height
             
-            // Base image aspect ratio (stable, using original image)
-            let rawOriginalAspectRatio = (viewModel.originalImage?.size ?? CGSize(width: 1, height: 1)).width / (viewModel.originalImage?.size ?? CGSize(width: 1, height: 1)).height
-            let originalImageAspectRatio = (Int(viewModel.rotation) % 180 != 0) ? (1.0 / rawOriginalAspectRatio) : rawOriginalAspectRatio
+            // Base image aspect ratio
+            // Use foreground image if available (after crop), otherwise use original
+            let currentImage = viewModel.foregroundImage ?? viewModel.originalImage
+            let rawCurrentAspectRatio = (currentImage?.size ?? CGSize(width: 1, height: 1)).width / (currentImage?.size ?? CGSize(width: 1, height: 1)).height
+            let currentImageAspectRatio = (Int(viewModel.rotation) % 180 != 0) ? (1.0 / rawCurrentAspectRatio) : rawCurrentAspectRatio
 
             // Current display image (might be cropped)
             // Use fullProcessedImage specifically when CROPPING to allow boundary adjustments
@@ -344,30 +346,36 @@ struct EditorView: View {
             }() ?? viewModel.originalImage
             
             // Determine the target aspect ratio for the CANVAS container
-            let isStickerMode = viewModel.selectedTab == .stickers || viewModel.isStickerModeActive
+            let isStickerMode = (viewModel.selectedTab == .stickers || (viewModel.selectedAspectRatio == .original && viewModel.isStickerModeActive)) && viewModel.selectedTab != .crop
             let targetAspectRatio: CGFloat = {
-                // 1. If a specific manual ratio is chosen (anything other than .original), respect it.
-                if let manualRatio = viewModel.selectedAspectRatio.ratio {
-                    return manualRatio
-                }
-                
-                // 2. If 'Original' is selected while in Sticker Mode, default to 1:1 (Square).
                 if isStickerMode {
-                    return 1.0
+                    return 1.0 // Force square for stickers (active or legacy)
                 }
-                
-                // 3. Fallback to the original image's aspect ratio.
-                return originalImageAspectRatio
+                if let ratio = viewModel.selectedAspectRatio.ratio {
+                    return ratio
+                }
+                // Use the CURRENT image aspect ratio (cropped if available)
+                // to allow the container to adapt to the cropped image size
+                return currentImageAspectRatio
             }()
             
             let containerAspectRatio = availableWidth / availableHeight
             
+            // Calculate the scale at which the ORIGINAL image fits the screen.
+            // We use this as a reference to prevent "jumping" or "zooming" after a crop.
+            let rawOriginalSize = viewModel.originalImage?.size ?? CGSize(width: 1, height: 1)
+            let originalImageSize = (Int(viewModel.rotation) % 180 != 0) ? CGSize(width: rawOriginalSize.height, height: rawOriginalSize.width) : rawOriginalSize
+            
+            let originalFitScale: CGFloat = {
+                let wScale = availableWidth / originalImageSize.width
+                let hScale = availableHeight / originalImageSize.height
+                return min(wScale, hScale)
+            }()
+
             let baseFitSize: CGSize = {
                 if targetAspectRatio > containerAspectRatio {
-                    // Width is limiting
                     return CGSize(width: availableWidth, height: availableWidth / targetAspectRatio)
                 } else {
-                    // Height is limiting
                     return CGSize(width: availableHeight * targetAspectRatio, height: availableHeight)
                 }
             }()
@@ -709,8 +717,8 @@ struct StickerExportTabView: View {
             
             HStack(spacing: 6) {
                 sizeButton(size: 512, label: "512*512 px")
-                sizeButton(size: 256, label: "256*256 px")
-                sizeButton(size: 128, label: "128*128 px")
+                sizeButton(size: 96, label: "96*96 px")
+                sizeButton(size: 21, label: "21*21 px")
                 
                 // System Color Picker Button
                 InteractiveButton(action: {

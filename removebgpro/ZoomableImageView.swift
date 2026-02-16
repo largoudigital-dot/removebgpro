@@ -130,7 +130,7 @@ struct ZoomableImageView: View {
     @State private var interactingLayer: SelectedLayer? = nil
     
     // Stable scaling for the workspace
-    @State private var editorScale: CGFloat? = nil
+    @State private var editorScale: CGFloat? = 1.0
     
     private let snapThreshold: CGFloat = 10
     
@@ -144,7 +144,6 @@ struct ZoomableImageView: View {
                         if let bgImage = background {
                             Image(uiImage: bgImage)
                                 .resizable()
-                                .aspectRatio(contentMode: .fill)
                                 .overlay(
                                     Rectangle()
                                         .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background)) ? 3 : 0)
@@ -204,7 +203,6 @@ struct ZoomableImageView: View {
                                 ZStack {
                                     Image(uiImage: displayImage)
                                         .resizable()
-                                        .aspectRatio(contentMode: .fit)
                                     
                                     if let commit = onCropCommit {
                                         CropOverlayView(initialRect: appliedCropRect ?? CGRect(x: 0, y: 0, width: 1, height: 1), onCommit: commit)
@@ -214,32 +212,9 @@ struct ZoomableImageView: View {
                                 .offset(fgOffset)
                             } else {
                                 // Normal mode: image is already cropped destructively
-                                // We use a stored editorScale to keep the workspace stable
-                                // so that cropped images appear smaller as intended.
-                                let currentScale: CGFloat = {
-                                    if let stored = editorScale {
-                                        return stored
-                                    } else {
-                                        // Calculate once (usually on first load or after background removal)
-                                        let widthRatio = geometry.size.width / displayImage.size.width
-                                        let heightRatio = geometry.size.height / displayImage.size.height
-                                        let scale = min(widthRatio, heightRatio)
-                                        
-                                        // Dispatch to state to persist it
-                                        DispatchQueue.main.async {
-                                            self.editorScale = scale
-                                        }
-                                        return scale
-                                    }
-                                }()
-                                
-                                let visualWidth = displayImage.size.width * currentScale
-                                let visualHeight = displayImage.size.height * currentScale
-                                
+                                // Let the image naturally fit the container without fixed sizing
                                 Image(uiImage: displayImage)
                                     .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: visualWidth, height: visualHeight)
                                     .overlay(
                                         Rectangle()
                                             .stroke(Color.blue, lineWidth: (interactingLayer == .foreground || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .foreground)) ? 3 : 0)
@@ -253,38 +228,6 @@ struct ZoomableImageView: View {
                                     .scaleEffect(fgScale)
                                     .offset(fgOffset)
                             }
-                        }
-                        .onAppear {
-                            // Initial calculation
-                            if editorScale == nil {
-                                let widthRatio = geometry.size.width / displayImage.size.width
-                                let heightRatio = geometry.size.height / displayImage.size.height
-                                editorScale = min(widthRatio, heightRatio)
-                            }
-                        }
-                        .onChange(of: original) { _ in
-                            // Reset when loading a completely new image
-                            editorScale = nil
-                        }
-                        .onChange(of: targetEditorScale) { newTargetScale in
-                            // When a crop is applied, the ViewModel sets targetEditorScale
-                            // to preserve the visual size of the cropped area
-                            guard let newTargetScale = newTargetScale else { return }
-                            
-                            // Calculate the base fit scale for the container
-                            let widthRatio = geometry.size.width / displayImage.size.width
-                            let heightRatio = geometry.size.height / displayImage.size.height
-                            let baseFitScale = min(widthRatio, heightRatio)
-                            
-                            // Apply the target scale (which is the crop rect width as a fraction)
-                            // to the base fit scale to get the final editor scale
-                            let finalScale = baseFitScale * newTargetScale
-                            
-                            DispatchQueue.main.async {
-                                self.editorScale = finalScale
-                            }
-                            
-                            print("📐 Applied target scale: \\(newTargetScale), base: \\(baseFitScale), final: \\(finalScale)")
                         }
                         .gesture(layerGesture(for: .foreground, containerSize: geometry.size))
                     }
