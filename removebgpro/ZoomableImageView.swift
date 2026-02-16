@@ -19,6 +19,7 @@ struct ZoomableImageView: View {
     let appliedCropRect: CGRect? // ADDED: Cumulative applied crop
     let onCropCommit: ((CGRect) -> Void)?
     let targetEditorScale: CGFloat? // ADDED: Target scale after crop
+    let referenceSize: CGSize? // ADDED: Stable size for base scaling
     @Binding var stickers: [Sticker]
     @Binding var selectedStickerId: UUID?
     let onDeleteSticker: (UUID) -> Void
@@ -84,7 +85,8 @@ struct ZoomableImageView: View {
         bgOffset: Binding<CGSize>,
         canvasScale: Binding<CGFloat>,
         canvasOffset: Binding<CGSize>,
-        targetEditorScale: CGFloat? = nil
+        targetEditorScale: CGFloat? = nil,
+        referenceSize: CGSize? = nil
     ) {
         self.foreground = foreground
         self.background = background
@@ -120,6 +122,7 @@ struct ZoomableImageView: View {
         self._canvasScale = canvasScale
         self._canvasOffset = canvasOffset
         self.targetEditorScale = targetEditorScale
+        self.referenceSize = referenceSize
     }
     
     @State private var showVGuide = false
@@ -141,9 +144,17 @@ struct ZoomableImageView: View {
                 ZStack {
                     // 1. Background Layer (Bottom)
                     Group {
+                         let calcSize = referenceSize ?? geometry.size
+                         
                         if let bgImage = background {
+                            let bgRefSize = original?.size ?? bgImage.size
+                            let bgWidthRatio = calcSize.width / bgRefSize.width
+                            let bgHeightRatio = calcSize.height / bgRefSize.height
+                            let bgBaseFitScale = max(bgWidthRatio, bgHeightRatio) // Aspect Fill
+                            
                             Image(uiImage: bgImage)
                                 .resizable()
+                                .frame(width: bgImage.size.width * bgBaseFitScale, height: bgImage.size.height * bgBaseFitScale)
                                 .overlay(
                                     Rectangle()
                                         .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background)) ? 3 : 0)
@@ -151,10 +162,14 @@ struct ZoomableImageView: View {
                                 .scaleEffect(bgScale)
                                 .offset(bgOffset)
                         } else if let colors = gradientColors {
+                            let bgRefWidth = (original?.size.width ?? calcSize.width)
+                            let bgRefHeight = (original?.size.height ?? calcSize.height)
+                            // We use calcSize for gradients as they aren't "images" with inherent size,
+                            // but we must be careful to match the background fill logic.
                             ZStack {
                                 LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom)
                             }
-                            .frame(width: geometry.size.width * bgScale, height: geometry.size.height * bgScale)
+                            .frame(width: calcSize.width * bgScale, height: calcSize.height * bgScale)
                             .overlay(
                                 Rectangle()
                                     .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background)) ? 3 : 0)
@@ -164,7 +179,7 @@ struct ZoomableImageView: View {
                             ZStack {
                                 color
                             }
-                            .frame(width: geometry.size.width * bgScale, height: geometry.size.height * bgScale)
+                            .frame(width: calcSize.width * bgScale, height: calcSize.height * bgScale)
                             .overlay(
                                 Rectangle()
                                     .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background)) ? 3 : 0)
@@ -178,11 +193,14 @@ struct ZoomableImageView: View {
                     
                     // 2. Foreground Layer (Middle)
                     if let displayImage = (foreground ?? original) {
-                        let uiScale = max(geometry.size.width, geometry.size.height) / 1000.0
+                        let calcSize = referenceSize ?? geometry.size
+                        let uiScale = max(calcSize.width, calcSize.height) / 1000.0
                         
                         // --- VISUAL DIMENSION CALCULATIONS ---
-                        let widthRatio = geometry.size.width / displayImage.size.width
-                        let heightRatio = geometry.size.height / displayImage.size.height
+                        // Use ORIGINAL image size for base fit calculation to keep scale stable throughout
+                        let referenceImageSize = original?.size ?? displayImage.size
+                        let widthRatio = calcSize.width / referenceImageSize.width
+                        let heightRatio = calcSize.height / referenceImageSize.height
                         let baseFitScale = min(widthRatio, heightRatio)
                         
                         // Full uncropped size at current scale
@@ -197,24 +215,32 @@ struct ZoomableImageView: View {
                             height: (crop.midY - 0.5) * fullH
                         )
                         
+                        let stableImageSize = CGSize(
+                            width: displayImage.size.width * baseFitScale,
+                            height: displayImage.size.height * baseFitScale
+                        )
+                        
                         Group {
                             if isCropping {
                                 // While cropping, show the full image with the crop overlay
                                 ZStack {
                                     Image(uiImage: displayImage)
                                         .resizable()
+                                        .frame(width: stableImageSize.width, height: stableImageSize.height)
                                     
                                     if let commit = onCropCommit {
                                         CropOverlayView(initialRect: appliedCropRect ?? CGRect(x: 0, y: 0, width: 1, height: 1), onCommit: commit)
+                                            .frame(width: stableImageSize.width, height: stableImageSize.height)
                                     }
                                 }
+                                .frame(width: stableImageSize.width, height: stableImageSize.height)
                                 .scaleEffect(fgScale)
                                 .offset(fgOffset)
                             } else {
                                 // Normal mode: image is already cropped destructively
-                                // Let the image naturally fit the container without fixed sizing
                                 Image(uiImage: displayImage)
                                     .resizable()
+                                    .frame(width: stableImageSize.width, height: stableImageSize.height)
                                     .overlay(
                                         Rectangle()
                                             .stroke(Color.blue, lineWidth: (interactingLayer == .foreground || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .foreground)) ? 3 : 0)
@@ -819,8 +845,10 @@ struct ZoomableImageView: View {
         
         var visualCenterOffset = CGSize.zero
         if let img = (foreground ?? original), !isCropping {
-            let widthRatio = geometry.size.width / img.size.width
-            let heightRatio = geometry.size.height / img.size.height
+            let calcSize = referenceSize ?? geometry.size
+            let refImgSize = original?.size ?? img.size
+            let widthRatio = calcSize.width / refImgSize.width
+            let heightRatio = calcSize.height / refImgSize.height
             let baseFitScale = min(widthRatio, heightRatio)
             
             let fullW = img.size.width * baseFitScale * fgScale
