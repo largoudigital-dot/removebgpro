@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -36,14 +37,51 @@ struct SettingsView: View {
                             Button(action: { showingLanguagePicker = true }) {
                                 SettingsRow(icon: "globe", title: "Sprache", color: .purple)
                             }
-                            SettingsRow(icon: "info.circle", title: "Über die App", color: .blue)
-                            SettingsRow(icon: "star", title: "App bewerten", color: .yellow)
-                            SettingsRow(icon: "square.and.arrow.up", title: "App teilen", color: .green)
+                            
+                            Button(action: {
+                                if let url = URL(string: "https://devlargou.com/") {
+                                    UIApplication.shared.open(url)
+                                }
+                            }) {
+                                SettingsRow(icon: "info.circle", title: "Über die App", color: .blue)
+                            }
+                            
+                            Button(action: {
+                                if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                                    SKStoreReviewController.requestReview(in: scene)
+                                }
+                            }) {
+                                SettingsRow(icon: "star", title: "App bewerten", color: .yellow)
+                            }
+                            
+                            Button(action: {
+                                let url = URL(string: "https://apps.apple.com/app/id6741484845")! // Placeholder ID
+                                let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                   let rootVC = windowScene.windows.first?.rootViewController {
+                                    rootVC.present(activityVC, animated: true)
+                                }
+                            }) {
+                                SettingsRow(icon: "square.and.arrow.up", title: "App teilen", color: .green)
+                            }
                         }
                         
                         SettingsGroup(title: "Support") {
-                            SettingsRow(icon: "envelope", title: "Kontakt", color: .orange)
-                            SettingsRow(icon: "doc.text", title: "Datenschutz", color: .gray)
+                            Button(action: {
+                                if let url = URL(string: "mailto:support@devlargou.com") {
+                                    UIApplication.shared.open(url)
+                                }
+                            }) {
+                                SettingsRow(icon: "envelope", title: "Kontakt", color: .orange)
+                            }
+                            
+                            Button(action: {
+                                if let url = URL(string: "https://devlargou.com/privacy.html") {
+                                    UIApplication.shared.open(url)
+                                }
+                            }) {
+                                SettingsRow(icon: "doc.text", title: "Datenschutz", color: .gray)
+                            }
                         }
                         
                         SettingsGroup(title: "Aktionen") {
@@ -51,6 +89,7 @@ struct SettingsView: View {
                                 // Clear projects logic
                                 UserDefaults.standard.removeObject(forKey: "recent_projects_v2")
                                 ProjectManager.shared.recentProjects = []
+                                AppHaptics.medium()
                             }) {
                                 SettingsRow(icon: "trash", title: "Alle Projekte löschen", color: .red, showChevron: false)
                             }

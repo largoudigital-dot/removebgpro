@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var selectedProject: Project?
     @State private var showingSourceSelection = false
     @State private var showingCamera = false
+    @AppStorage("hasSeenOnboarding") var hasSeenOnboarding: Bool = false
     
     var body: some View {
         NavigationStack {
@@ -212,6 +213,9 @@ struct ContentView: View {
                         self.isEditorActive = true
                     }
                 }
+            }
+            .fullScreenCover(isPresented: .init(get: { !hasSeenOnboarding }, set: { _ in })) {
+                OnboardingView(hasSeenOnboarding: $hasSeenOnboarding)
             }
             .toolbar(.hidden, for: .navigationBar)
             .onAppear {
