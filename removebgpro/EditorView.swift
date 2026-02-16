@@ -356,8 +356,8 @@ struct EditorView: View {
                 return viewModel.fullProcessedImage ?? viewModel.originalImage
             }() ?? viewModel.originalImage
             
-            // Determine the target aspect ratio for the CANVAS container
-            let isStickerMode = (viewModel.selectedTab == .stickers || viewModel.showingEmojiPicker || (viewModel.selectedAspectRatio == .original && viewModel.isStickerModeActive)) && viewModel.selectedTab != .crop
+            // Determine if we should apply sticker scaling (smaller canvas for handles)
+            let isStickerMode = viewModel.isStickerModeActive && viewModel.selectedTab != .crop
             let targetAspectRatio: CGFloat = {
                 if let ratio = viewModel.selectedAspectRatio.ratio {
                     return ratio
