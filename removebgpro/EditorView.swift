@@ -764,6 +764,9 @@ struct StickerExportTabView: View {
                 .frame(width: 76, height: 44)
                 .background(
                     ZStack {
+                        CheckerboardView(gridSize: 10)
+                            .opacity(0.4)
+                            
                         if viewModel.stickerSize == size {
                             LinearGradient(colors: [Color(hex: "#3B82F6"), Color(hex: "#2563EB")], startPoint: .topLeading, endPoint: .bottomTrailing)
                         } else {
