@@ -145,9 +145,20 @@ struct EditorView: View {
             UnsplashPickerView(onSelect: { image in
                 viewModel.setBackgroundImage(image)
                 showingUnsplashPicker = false
+                viewModel.selectedTab = .unsplash // Switch to background tab to allow adjustment
             })
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
+        }
+    }
+
+    private var currentActiveLayer: SelectedLayer {
+        if viewModel.selectedTab == .unsplash {
+            return .background
+        } else if viewModel.selectedTab == .crop {
+            return .foreground // Or handle specific crop logic if needed
+        } else {
+            return .foreground
         }
     }
     
@@ -410,7 +421,7 @@ struct EditorView: View {
                             original: original,
                             backgroundColor: viewModel.backgroundColor,
                             gradientColors: viewModel.gradientColors,
-                            activeLayer: .foreground, // Treat as single layer
+                            activeLayer: currentActiveLayer,
                             rotation: viewModel.rotation,
                             isCropping: viewModel.isCropping,
                             appliedCropRect: viewModel.appliedCropRect,
@@ -447,7 +458,10 @@ struct EditorView: View {
                             canvasScale: $viewModel.canvasScale,
                             canvasOffset: $viewModel.canvasOffset,
                             targetEditorScale: viewModel.targetEditorScale,
-                            referenceSize: geometry.size
+                            referenceSize: geometry.size,
+                            onInteractionEnd: {
+                                viewModel.didChange()
+                            }
                         )
                         .id("photo-\(viewModel.rotation)-\(viewModel.originalImage?.hashValue ?? 0)")
                     }
@@ -692,7 +706,7 @@ struct EditorView: View {
         case .stickers:
             StickerExportTabView(viewModel: viewModel)
         case .unsplash:
-            EmptyView()
+            BackgroundAdjustmentTabView(viewModel: viewModel, showingPicker: $showingUnsplashPicker)
         }
     }
 
@@ -781,6 +795,35 @@ struct StickerExportTabView: View {
                 )
                 .shadow(color: viewModel.stickerSize == size ? Color.blue.opacity(0.2) : Color.clear, radius: 8, x: 0, y: 4)
         }
+    }
+}
+
+struct BackgroundAdjustmentTabView: View {
+    @ObservedObject var viewModel: EditorViewModel
+    @Binding var showingPicker: Bool
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            InteractiveButton(action: {
+                showingPicker = true
+            }) {
+                HStack {
+                    Image(systemName: "photo.on.rectangle.angled")
+                    Text("Hintergrund ändern")
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .frame(height: 44)
+                .background(Color.blue)
+                .cornerRadius(12)
+            }
+            
+            Text("Pinchen & Ziehen zum Anpassen")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.primary.opacity(0.6))
+        }
+        .padding(.horizontal, 16)
     }
 }
 

@@ -61,17 +61,24 @@ struct UnsplashPickerView: View {
                             Button(action: {
                                 showingActionSheet = true
                             }) {
-                                VStack(spacing: 8) {
-                                    Image(systemName: "plus.viewfinder")
-                                        .font(.system(size: 30))
-                                        .foregroundColor(.white)
-                                    Text("Eigenes Foto")
-                                        .font(.system(size: 11, weight: .bold))
-                                        .foregroundColor(.white)
+                                ZStack {
+                                    CheckerboardView(gridSize: 8)
+                                        .opacity(0.2)
+                                        .background(Color.white.opacity(0.05))
+                                    
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "plus.viewfinder")
+                                            .font(.system(size: 30))
+                                            .foregroundColor(.white)
+                                        Text("Eigenes Foto")
+                                            .font(.system(size: 11, weight: .bold))
+                                            .foregroundColor(.white)
+                                    }
                                 }
                                 .frame(minWidth: 0, maxWidth: .infinity)
                                 .frame(height: 120)
-                                .background(Color.white.opacity(0.1))
+                                .clipped()
+                                .cornerRadius(1) // Corner radius for the grid item
                             }
                             
                             ForEach(photos) { photo in

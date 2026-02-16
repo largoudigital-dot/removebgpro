@@ -30,6 +30,7 @@ struct ZoomableImageView: View {
     let onEditText: (TextItem) -> Void
     let isEditingText: Bool
     let persistentSelection: Bool // ADDED: Keep selection border visible
+    let onInteractionEnd: (() -> Void)? // ADDED: Notify when move/scale ends
     
     // Shadow Properties
     let shadowRadius: CGFloat
@@ -86,7 +87,8 @@ struct ZoomableImageView: View {
         canvasScale: Binding<CGFloat>,
         canvasOffset: Binding<CGSize>,
         targetEditorScale: CGFloat? = nil,
-        referenceSize: CGSize? = nil
+        referenceSize: CGSize? = nil,
+        onInteractionEnd: (() -> Void)? = nil
     ) {
         self.foreground = foreground
         self.background = background
@@ -123,6 +125,7 @@ struct ZoomableImageView: View {
         self._canvasOffset = canvasOffset
         self.targetEditorScale = targetEditorScale
         self.referenceSize = referenceSize
+        self.onInteractionEnd = onInteractionEnd
     }
     
     @State private var showVGuide = false
@@ -146,11 +149,11 @@ struct ZoomableImageView: View {
                     Group {
                          let calcSize = referenceSize ?? geometry.size
                          
-                        if let bgImage = background {
-                            let bgRefSize = original?.size ?? bgImage.size
-                            let bgWidthRatio = calcSize.width / bgRefSize.width
-                            let bgHeightRatio = calcSize.height / bgRefSize.height
-                            let bgBaseFitScale = max(bgWidthRatio, bgHeightRatio) // Aspect Fill
+                         if let bgImage = background {
+                            // Calculate Aspect Fill scale for the background image relative to the CURRENT canvas size
+                            let bgWidthRatio = geometry.size.width / bgImage.size.width
+                            let bgHeightRatio = geometry.size.height / bgImage.size.height
+                            let bgBaseFitScale = max(bgWidthRatio, bgHeightRatio) 
                             
                             Image(uiImage: bgImage)
                                 .resizable()
@@ -162,14 +165,10 @@ struct ZoomableImageView: View {
                                 .scaleEffect(bgScale)
                                 .offset(bgOffset)
                         } else if let colors = gradientColors {
-                            let bgRefWidth = (original?.size.width ?? calcSize.width)
-                            let bgRefHeight = (original?.size.height ?? calcSize.height)
-                            // We use calcSize for gradients as they aren't "images" with inherent size,
-                            // but we must be careful to match the background fill logic.
                             ZStack {
                                 LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom)
                             }
-                            .frame(width: calcSize.width * bgScale, height: calcSize.height * bgScale)
+                            .frame(width: geometry.size.width * bgScale, height: geometry.size.height * bgScale)
                             .overlay(
                                 Rectangle()
                                     .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background)) ? 3 : 0)
@@ -179,7 +178,7 @@ struct ZoomableImageView: View {
                             ZStack {
                                 color
                             }
-                            .frame(width: calcSize.width * bgScale, height: calcSize.height * bgScale)
+                            .frame(width: geometry.size.width * bgScale, height: geometry.size.height * bgScale)
                             .overlay(
                                 Rectangle()
                                     .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background)) ? 3 : 0)
@@ -193,14 +192,12 @@ struct ZoomableImageView: View {
                     
                     // 2. Foreground Layer (Middle)
                     if let displayImage = (foreground ?? original) {
-                        let calcSize = referenceSize ?? geometry.size
-                        let uiScale = max(calcSize.width, calcSize.height) / 1000.0
+                        let uiScale = max(geometry.size.width, geometry.size.height) / 1000.0
                         
                         // --- VISUAL DIMENSION CALCULATIONS ---
-                        // Use ORIGINAL image size for base fit calculation to keep scale stable throughout
-                        let referenceImageSize = original?.size ?? displayImage.size
-                        let widthRatio = calcSize.width / referenceImageSize.width
-                        let heightRatio = calcSize.height / referenceImageSize.height
+                        // Use CURRENT display image size for Aspect Fit relative to geometry.size
+                        let widthRatio = geometry.size.width / displayImage.size.width
+                        let heightRatio = geometry.size.height / displayImage.size.height
                         let baseFitScale = min(widthRatio, heightRatio)
                         
                         // Full uncropped size at current scale
@@ -608,6 +605,7 @@ struct ZoomableImageView: View {
                     showVGuide = false
                     showHGuide = false
                 }
+                onInteractionEnd?()
             }
             
         let zoom = MagnificationGesture()
@@ -631,6 +629,7 @@ struct ZoomableImageView: View {
                 print("DEBUG: Photo Zoom End on \(targetLayer)")
                 finalizeScale(for: targetLayer)
                 interactingLayer = nil
+                onInteractionEnd?()
             }
             
         let doubleTap = TapGesture(count: 2)
