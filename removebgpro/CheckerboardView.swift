@@ -3,7 +3,7 @@ import SwiftUI
 struct CheckerboardView: View {
     var gridSize: CGFloat = 12
     let color1: Color = .white
-    let color2: Color = Color(white: 0.92)
+    let color2: Color = Color(white: 0.95)
     
     var body: some View {
         Canvas { context, size in

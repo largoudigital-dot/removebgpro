@@ -346,7 +346,7 @@ struct EditorView: View {
             }() ?? viewModel.originalImage
             
             // Determine the target aspect ratio for the CANVAS container
-            let isStickerMode = (viewModel.selectedTab == .stickers || (viewModel.selectedAspectRatio == .original && viewModel.isStickerModeActive)) && viewModel.selectedTab != .crop
+            let isStickerMode = (viewModel.selectedTab == .stickers || viewModel.showingEmojiPicker || (viewModel.selectedAspectRatio == .original && viewModel.isStickerModeActive)) && viewModel.selectedTab != .crop
             let targetAspectRatio: CGFloat = {
                 if isStickerMode {
                     return 1.0 // Force square for stickers (active or legacy)
@@ -391,9 +391,8 @@ struct EditorView: View {
                     if isStickerMode {
                         ZStack {
                             // Checkerboard
-                            Image(systemName: "checkerboard.rectangle")
-                                .resizable()
-                                .foregroundColor(.gray.opacity(0.1))
+                            CheckerboardView(gridSize: 10)
+                                .opacity(0.4)
                                 .background(Color.white)
                             
                             // Visual border
