@@ -44,6 +44,8 @@
 		B0DYF745828C4D3F907FC7867A4D8C29 /* WebPConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE2F57C29846839A63F73BFF5544A1 /* WebPConverter.swift */; };
 		B0DYF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift */; };
 		B0DYF85A12C648D88F090FB6AFB6E9AE /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEA37C90AD4611A3BDDF23B2C17155 /* ImageProcessor.swift */; };
+		B0DY00000000000000000CB2 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB2 /* OnboardingView.swift */; };
+		B0DY00000000000000000CB3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB3 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -104,6 +106,8 @@
 		FACEF007E95348D5AD7CCDCFFBFF6839 /* ShadowTabView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ShadowTabView.swift; sourceTree = "<group>"; };
 		FACEF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LanguagePickerView.swift; sourceTree = "<group>"; };
 		FACEFC25D65248688F7CED2E303665CA /* UnsplashService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UnsplashService.swift; sourceTree = "<group>"; };
+		FACE00000000000000000CB2 /* OnboardingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		FACE00000000000000000CB3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -204,6 +208,8 @@
 				FACED7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings */,
 				FACEE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift */,
 				FACEF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift */,
+				FACE00000000000000000CB2 /* OnboardingView.swift */,
+				FACE00000000000000000CB3 /* PrivacyInfo.xcprivacy */,
 			);
 			path = removebgpro;
 			sourceTree = "<group>";
@@ -368,6 +374,7 @@
 			files = (
 				B0DY8E00553843879F11A1E4515F091B /* Assets.xcassets in Resources */,
 				B0DYD7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings in Resources */,
+				B0DY00000000000000000CB3 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -427,6 +434,7 @@
 				B0DYD7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift in Sources */,
 				B0DYE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift in Sources */,
 				B0DYF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift in Sources */,
+				B0DY00000000000000000CB2 /* OnboardingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
