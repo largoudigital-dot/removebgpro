@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CheckerboardView: View {
-    let gridSize: CGFloat = 12
+    var gridSize: CGFloat = 12
     let color1: Color = .white
     let color2: Color = Color(white: 0.92)
     
