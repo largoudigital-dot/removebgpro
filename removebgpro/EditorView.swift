@@ -658,6 +658,11 @@ struct EditorView: View {
                                     viewModel.selectedTab = tab
                                     if tab == .stickers {
                                         viewModel.stickerFlowStep = .size
+                                        // Standard configuration for stickers: 1:1 and 512px
+                                        withAnimation(AppMotion.snappy) {
+                                            viewModel.selectedAspectRatio = .square
+                                            viewModel.applyStickerSize(512)
+                                        }
                                     }
                                 }
                             }
