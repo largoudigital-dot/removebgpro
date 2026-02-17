@@ -40,7 +40,7 @@ struct ColorsTabView: View {
                 }
                 .frame(maxHeight: .infinity)
             } else {
-                // Schritt 1: 3-Button Navigation
+                // Schritt 1: 4-Button Navigation (Presets, Gradients, Transparent, Custom)
                 HStack(spacing: 0) {
                     ForEach(ColorPickerTab.allCases) { tab in
                         InteractiveButton(action: {
@@ -62,11 +62,52 @@ struct ColorsTabView: View {
                             .padding(.vertical, 8)
                         }
                     }
+                    
+                    // Rainbow Color Picker Button
+                    InteractiveButton(action: {
+                        showingColorPicker = true
+                    }) {
+                        VStack(spacing: 10) {
+                            ZStack {
+                                Circle()
+                                    .fill(AngularGradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red], center: .center))
+                                    .frame(width: 28, height: 28)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white, lineWidth: 1.5)
+                                    )
+                                    .shadow(color: .black.opacity(0.1), radius: 2)
+                            }
+                            .frame(width: 28, height: 28)
+                            
+                            Text("Farbe")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(.primary.opacity(0.8))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                    }
                 }
                 .transition(.move(edge: .leading).combined(with: .opacity))
             }
         }
+        .sheet(isPresented: $showingColorPicker) {
+            SpectrumColorPickerView(color: Binding(
+                get: { viewModel.backgroundColor ?? .white },
+                set: { newColor in
+                    viewModel.didChange()
+                    viewModel.backgroundColor = newColor
+                    viewModel.gradientColors = nil
+                    viewModel.backgroundImage = nil
+                    viewModel.updateAdjustment()
+                }
+            ))
+            .presentationDetents([.fraction(0.45), .medium])
+            .presentationDragIndicator(.visible)
+        }
     }
+    
+    @State private var showingColorPicker = false
     
     private var presetsView: some View {
         ScrollView(.horizontal, showsIndicators: false) {
