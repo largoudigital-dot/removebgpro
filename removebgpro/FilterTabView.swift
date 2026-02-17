@@ -41,11 +41,13 @@ struct FilterButton: View {
     var body: some View {
         InteractiveButton(action: action) {
             VStack(spacing: 8) {
-                // Filter preview circle with gradient or icon
+                // Filter preview circle with representative photo
                 ZStack {
-                    Circle()
-                        .fill(filterGradient)
+                    Image(filter.imageName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
                         .frame(width: 44, height: 44)
+                        .clipShape(Circle())
                         .overlay(
                             Circle()
                                 .stroke(Color.black.opacity(0.1), lineWidth: 1)
@@ -67,29 +69,6 @@ struct FilterButton: View {
                     .lineLimit(1)
                     .frame(width: 70)
             }
-        }
-    }
-    
-    private var filterGradient: LinearGradient {
-        switch filter {
-        case .none:
-            return LinearGradient(colors: [.white, .gray], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .losAngeles:
-            return LinearGradient(colors: [.orange, .yellow], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .paris:
-            return LinearGradient(colors: [.pink.opacity(0.6), .purple.opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .tokyo:
-            return LinearGradient(colors: [.blue, .cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .london:
-            return LinearGradient(colors: [.gray, Color(white: 0.4)], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .newYork:
-            return LinearGradient(colors: [.black, .white], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .milan:
-            return LinearGradient(colors: [.red, .orange], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .sepia:
-            return LinearGradient(colors: [Color(red: 0.7, green: 0.5, blue: 0.3), Color(red: 0.4, green: 0.3, blue: 0.2)], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .dramatic:
-            return LinearGradient(colors: [.black, Color(white: 0.3)], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
     }
 }

@@ -31,4 +31,18 @@ enum FilterType: String, CaseIterable, Identifiable, Codable {
     var displayName: LocalizedStringKey {
         self.localizedName
     }
+    
+    var imageName: String {
+        switch self {
+        case .none: return "filter_none"
+        case .losAngeles: return "filter_losangeles"
+        case .paris: return "filter_paris"
+        case .tokyo: return "filter_tokyo"
+        case .london: return "filter_london"
+        case .newYork: return "filter_newyork"
+        case .milan: return "filter_milan"
+        case .sepia: return "filter_sepia"
+        case .dramatic: return "filter_dramatic"
+        }
+    }
 }
