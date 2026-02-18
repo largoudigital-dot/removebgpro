@@ -8,7 +8,6 @@ struct ColorsTabView: View {
     let presetColors: [Color] = [
         .white, .black, .gray, .red, .blue, .green, .yellow, .orange, .pink, .purple, .cyan, .mint
     ]
-    
     // Gradient Pairs
     let gradients: [[Color]] = [
         [.blue, .purple],
@@ -19,6 +18,17 @@ struct ColorsTabView: View {
         [.blue, .cyan],
         [.purple, .pink],
         [.yellow, .orange]
+    ]
+    // Gradient Image Mappings
+    let gradientImageNames: [String?] = [
+        "gradient_sunset",
+        "gradient_dawn",
+        "gradient_ocean",
+        "gradient_berry",
+        nil, // gradient_midnight
+        nil, // gradient_sky
+        nil, // gradient_candy
+        nil  // gradient_sunny
     ]
     
     var body: some View {
@@ -133,7 +143,8 @@ struct ColorsTabView: View {
             HStack(spacing: 12) {
                 ForEach(0..<gradients.count, id: \.self) { index in
                     let colors = gradients[index]
-                    GradientCircle(colors: colors, isSelected: viewModel.gradientColors == colors) {
+                    let imageName = gradientImageNames[index]
+                    GradientCircle(colors: colors, imageName: imageName, isSelected: viewModel.gradientColors == colors) {
                         viewModel.didChange()
                         viewModel.gradientColors = colors
                         viewModel.backgroundColor = nil
@@ -226,17 +237,36 @@ struct ColorCircle: View {
 
 struct GradientCircle: View {
     let colors: [Color]
+    let imageName: String?
     let isSelected: Bool
     let action: () -> Void
     
     var body: some View {
         InteractiveButton(action: action) {
             ZStack {
-                Circle()
-                    .fill(LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 44, height: 44)
-                    .scaleEffect(isSelected ? 1.15 : 1.0)
-                    .animation(AppMotion.bouncy, value: isSelected)
+                if let imageName = imageName {
+                    Image(imageName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 44, height: 44)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(Color.black.opacity(0.1), lineWidth: 1)
+                        )
+                        .scaleEffect(isSelected ? 1.15 : 1.0)
+                        .animation(AppMotion.bouncy, value: isSelected)
+                } else {
+                    Circle()
+                        .fill(LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 44, height: 44)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.black.opacity(0.1), lineWidth: 1)
+                        )
+                        .scaleEffect(isSelected ? 1.15 : 1.0)
+                        .animation(AppMotion.bouncy, value: isSelected)
+                }
                 
                 if isSelected {
                     Circle()
