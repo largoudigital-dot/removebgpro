@@ -54,7 +54,7 @@ struct EditorState: Equatable {
     var brightness: Double
     var contrast: Double
     var saturation: Double
-    var blur: Double
+    var sharpness: Double
     var rotation: CGFloat
     var selectedAspectRatio: AspectRatio
     var customSize: CGSize?
@@ -87,7 +87,7 @@ struct EditorState: Equatable {
             lhs.brightness == rhs.brightness &&
             lhs.contrast == rhs.contrast &&
             lhs.saturation == rhs.saturation &&
-            lhs.blur == rhs.blur &&
+            lhs.sharpness == rhs.sharpness &&
             lhs.rotation == rhs.rotation &&
             lhs.selectedAspectRatio == rhs.selectedAspectRatio &&
             lhs.customSize == rhs.customSize &&
@@ -147,7 +147,7 @@ class EditorViewModel: ObservableObject {
     @Published var brightness: Double = 1.0
     @Published var contrast: Double = 1.0
     @Published var saturation: Double = 1.0
-    @Published var blur: Double = 0.0
+    @Published var sharpness: Double = 1.0
     @Published var rotation: CGFloat = 0.0
     @Published var isRemovingBackground = false
     @Published var selectedAspectRatio: AspectRatio = .original
@@ -213,7 +213,7 @@ class EditorViewModel: ObservableObject {
     }
     
     var isAdjustActive: Bool {
-        brightness != 1.0 || contrast != 1.0 || saturation != 1.0 || blur != 0.0
+        brightness != 1.0 || contrast != 1.0 || saturation != 1.0 || sharpness != 1.0
     }
     
     var isColorActive: Bool {
@@ -230,7 +230,7 @@ class EditorViewModel: ObservableObject {
             brightness: brightness,
             contrast: contrast,
             saturation: saturation,
-            blur: blur,
+            sharpness: sharpness,
             rotation: rotation,
             aspectRatio: selectedAspectRatio.ratio,
             customSize: customSize,
@@ -273,7 +273,7 @@ class EditorViewModel: ObservableObject {
                brightness != 1.0 || 
                contrast != 1.0 || 
                saturation != 1.0 || 
-               blur != 0.0 || 
+               sharpness != 1.0 || 
                rotation != 0 || 
                selectedAspectRatio != .original || 
                !stickers.isEmpty ||
@@ -364,7 +364,7 @@ class EditorViewModel: ObservableObject {
             brightness: brightness,
             contrast: contrast,
             saturation: saturation,
-            blur: blur,
+            sharpness: sharpness,
             rotation: rotation,
             selectedAspectRatio: selectedAspectRatio,
             customSize: customSize,
@@ -444,7 +444,7 @@ class EditorViewModel: ObservableObject {
         brightness = state.brightness
         contrast = state.contrast
         saturation = state.saturation
-        blur = state.blur
+        sharpness = state.sharpness
         rotation = state.rotation
         selectedAspectRatio = state.selectedAspectRatio
         customSize = state.customSize
@@ -673,7 +673,7 @@ class EditorViewModel: ObservableObject {
         brightness = 1.0
         contrast = 1.0
         saturation = 1.0
-        blur = 0.0
+        sharpness = 1.0
         backgroundColor = nil
         gradientColors = nil
         backgroundImage = nil // Also reset background if needed
@@ -883,7 +883,7 @@ class EditorViewModel: ObservableObject {
             brightness: params.brightness,
             contrast: params.contrast,
             saturation: params.saturation,
-            blur: params.blur,
+            sharpness: params.sharpness,
             rotation: params.rotation
         ) ?? baseImage
         
@@ -982,7 +982,7 @@ class EditorViewModel: ObservableObject {
             brightness: brightness,
             contrast: contrast,
             saturation: saturation,
-            blur: blur,
+            sharpness: sharpness,
             rotation: rotation,
             selectedAspectRatio: selectedAspectRatio,
             customWidth: customSize?.width,
@@ -1119,7 +1119,7 @@ class EditorViewModel: ObservableObject {
             self.brightness = state.brightness
             self.contrast = state.contrast
             self.saturation = state.saturation
-            self.blur = state.blur
+            self.sharpness = state.sharpness
             self.rotation = state.rotation
             self.selectedAspectRatio = state.selectedAspectRatio
             

@@ -49,7 +49,7 @@ struct AdjustmentTabView: View {
                         
                         SliderView(parameter: parameter, viewModel: viewModel)
                         
-                        Text(String(format: "%.0f%%", getParameterValue(parameter) * 100))
+                        Text(String(format: "%.0f%%", getParameterValue(parameter) * 50))
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(Color(hex: "#3B82F6"))
                     }
@@ -133,7 +133,7 @@ struct AdjustmentTabView: View {
         case .brightness: return viewModel.brightness
         case .contrast: return viewModel.contrast
         case .saturation: return viewModel.saturation
-        case .sharpness: return viewModel.blur / 20.0
+        case .sharpness: return viewModel.sharpness
         }
     }
 }
@@ -163,11 +163,11 @@ struct SliderView: View {
                 .accentColor(Color(hex: "#3B82F6"))
                 .onChange(of: viewModel.saturation) { _ in viewModel.updateAdjustment() }
         case .sharpness:
-            Slider(value: $viewModel.blur, in: 0...20, onEditingChanged: { editing in
+            Slider(value: $viewModel.sharpness, in: 0...2, onEditingChanged: { editing in
                 if !editing { viewModel.finishAdjustment() }
             })
                 .accentColor(Color(hex: "#3B82F6"))
-                .onChange(of: viewModel.blur) { _ in viewModel.updateAdjustment() }
+                .onChange(of: viewModel.sharpness) { _ in viewModel.updateAdjustment() }
         }
     }
 }

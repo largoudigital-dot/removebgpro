@@ -16,7 +16,7 @@ struct ProcessingParameters: Equatable {
     var brightness: Double = 1.0
     var contrast: Double = 1.0
     var saturation: Double = 1.0
-    var blur: Double = 0.0
+    var sharpness: Double = 1.0
     var rotation: CGFloat = 0.0
     var aspectRatio: CGFloat? = nil
     var customSize: CGSize? = nil
@@ -159,7 +159,7 @@ class ImageProcessor {
                          brightness: Double,
                          contrast: Double,
                          saturation: Double,
-                         blur: Double) -> UIImage? {
+                         sharpness: Double) -> UIImage? {
         guard let ciImage = CIImage(image: image) else { return image }
         
         var currentImage = ciImage
@@ -175,12 +175,20 @@ class ImageProcessor {
             currentImage = output
         }
         
-        // Apply blur if needed
-        if blur > 0 {
+        // Apply bidirectional Sharpness/Blur
+        if sharpness > 1.0 {
+            // Apply Sharpening (1.0 to 2.0 -> 0.0 to 1.0 intensity)
+            let sharpenFilter = CIFilter.sharpenLuminance()
+            sharpenFilter.inputImage = currentImage
+            sharpenFilter.sharpness = Float(sharpness - 1.0)
+            if let output = sharpenFilter.outputImage {
+                currentImage = output
+            }
+        } else if sharpness < 1.0 {
+            // Apply Blurring (1.0 to 0.0 -> 0.0 to 20.0 radius)
             let blurFilter = CIFilter.gaussianBlur()
             blurFilter.inputImage = currentImage
-            blurFilter.radius = Float(blur)
-            
+            blurFilter.radius = Float((1.0 - sharpness) * 20.0)
             if let output = blurFilter.outputImage {
                 currentImage = output
             }
@@ -296,7 +304,7 @@ class ImageProcessor {
                      brightness: Double,
                      contrast: Double,
                      saturation: Double,
-                     blur: Double,
+                     sharpness: Double,
                      rotation: CGFloat) -> UIImage? {
         var processedImage = original
         
@@ -310,7 +318,7 @@ class ImageProcessor {
                                           brightness: brightness,
                                           contrast: contrast,
                                           saturation: saturation,
-                                          blur: blur) {
+                                          sharpness: sharpness) {
             processedImage = adjusted
         }
         
@@ -328,7 +336,7 @@ class ImageProcessor {
         let brightness = params.brightness
         let contrast = params.contrast
         let saturation = params.saturation
-        let blur = params.blur
+        let sharpness = params.sharpness
         let rotation = params.rotation
         let aspectRatio = params.aspectRatio
         let customSize = params.customSize
@@ -410,7 +418,7 @@ class ImageProcessor {
                                           brightness: brightness,
                                           contrast: contrast,
                                           saturation: saturation,
-                                          blur: blur,
+                                          sharpness: sharpness,
                                           rotation: rotation) ?? processedImage
         
         if shouldIncludeShadow {

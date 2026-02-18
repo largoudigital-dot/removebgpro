@@ -6,7 +6,7 @@ struct CodableEditorState: Codable {
     var brightness: Double
     var contrast: Double
     var saturation: Double
-    var blur: Double
+    var sharpness: Double
     var rotation: CGFloat
     var selectedAspectRatio: AspectRatio
     var customWidth: CGFloat?
@@ -37,7 +37,7 @@ struct CodableEditorState: Codable {
     var stickerSize: CGFloat // ADDED
     
     enum CodingKeys: String, CodingKey {
-        case selectedFilter, brightness, contrast, saturation, blur, rotation
+        case selectedFilter, brightness, contrast, saturation, sharpness, rotation
         case selectedAspectRatio, customWidth, customHeight, backgroundColorHex, gradientColorsHex
         case backgroundImageName, foregroundImageName, appliedCropRect, stickers, textItems
         case shadowRadius, shadowX, shadowY, shadowColorHex, shadowOpacity
@@ -51,7 +51,7 @@ struct CodableEditorState: Codable {
         self.brightness = try container.decode(Double.self, forKey: .brightness)
         self.contrast = try container.decode(Double.self, forKey: .contrast)
         self.saturation = try container.decode(Double.self, forKey: .saturation)
-        self.blur = try container.decode(Double.self, forKey: .blur)
+        self.sharpness = try container.decode(Double.self, forKey: .sharpness)
         self.rotation = try container.decode(CGFloat.self, forKey: .rotation)
         self.selectedAspectRatio = try container.decode(AspectRatio.self, forKey: .selectedAspectRatio)
         self.customWidth = try container.decodeIfPresent(CGFloat.self, forKey: .customWidth)
@@ -88,7 +88,7 @@ struct CodableEditorState: Codable {
         try container.encode(brightness, forKey: .brightness)
         try container.encode(contrast, forKey: .contrast)
         try container.encode(saturation, forKey: .saturation)
-        try container.encode(blur, forKey: .blur)
+        try container.encode(sharpness, forKey: .sharpness)
         try container.encode(rotation, forKey: .rotation)
         try container.encode(selectedAspectRatio, forKey: .selectedAspectRatio)
         try container.encodeIfPresent(customWidth, forKey: .customWidth)
@@ -124,7 +124,7 @@ struct CodableEditorState: Codable {
         brightness: Double,
         contrast: Double,
         saturation: Double,
-        blur: Double,
+        sharpness: Double,
         rotation: CGFloat,
         selectedAspectRatio: AspectRatio,
         customWidth: CGFloat?,
@@ -156,7 +156,7 @@ struct CodableEditorState: Codable {
         self.brightness = brightness
         self.contrast = contrast
         self.saturation = saturation
-        self.blur = blur
+        self.sharpness = sharpness
         self.rotation = rotation
         self.selectedAspectRatio = selectedAspectRatio
         self.customWidth = customWidth
