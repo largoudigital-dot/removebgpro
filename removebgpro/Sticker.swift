@@ -7,6 +7,7 @@ enum StickerType: String, Codable, Equatable {
     case emoji
     case systemImage
     case imageAsset // New type for local assets
+    case giphy
 }
 
 struct Sticker: Identifiable, Codable, Equatable {

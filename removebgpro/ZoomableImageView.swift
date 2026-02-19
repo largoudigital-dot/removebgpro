@@ -976,6 +976,31 @@ struct StickerView: View {
                                 .stroke(isSelected ? Color.white : Color.clear, style: StrokeStyle(lineWidth: 2))
                                 .shadow(color: .black.opacity(0.3), radius: 4)
                         )
+                } else if sticker.type == .giphy {
+                    let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(sticker.content)
+                    if let uiImage = UIImage(contentsOfFile: url.path) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100, height: 100)
+                            .padding(10)
+                            .background(
+                                GeometryReader { proxy in
+                                    Color.clear
+                                        .onAppear { contentSize = proxy.size }
+                                        .onChange(of: sticker.content) { _ in contentSize = proxy.size }
+                                }
+                            )
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(isSelected ? Color.white : Color.clear, style: StrokeStyle(lineWidth: 2))
+                                    .shadow(color: .black.opacity(0.3), radius: 4)
+                            )
+                    } else {
+                        // Fallback
+                        ProgressView()
+                            .frame(width: 100, height: 100)
+                    }
                 } else {
                     Image(systemName: sticker.content)
                         .resizable()

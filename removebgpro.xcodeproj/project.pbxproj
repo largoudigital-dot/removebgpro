@@ -44,6 +44,8 @@
 		B0DYF745828C4D3F907FC7867A4D8C29 /* WebPConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE2F57C29846839A63F73BFF5544A1 /* WebPConverter.swift */; };
 		B0DYF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift */; };
 		B0DYF85A12C648D88F090FB6AFB6E9AE /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEA37C90AD4611A3BDDF23B2C17155 /* ImageProcessor.swift */; };
+		B0DY00000000000000000CB4 /* GiphyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB4 /* GiphyService.swift */; };
+		B0DY00000000000000000CB5 /* GiphyPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB5 /* GiphyPickerView.swift */; };
 		B0DY00000000000000000CB2 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB2 /* OnboardingView.swift */; };
 		B0DY00000000000000000CB3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB3 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
@@ -105,6 +107,8 @@
 		FACEED5CC97743E4B228BB479606E80B /* ColorsTabView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ColorsTabView.swift; sourceTree = "<group>"; };
 		FACEF007E95348D5AD7CCDCFFBFF6839 /* ShadowTabView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ShadowTabView.swift; sourceTree = "<group>"; };
 		FACEF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LanguagePickerView.swift; sourceTree = "<group>"; };
+		FACE00000000000000000CB4 /* GiphyService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GiphyService.swift; sourceTree = "<group>"; };
+		FACE00000000000000000CB5 /* GiphyPickerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GiphyPickerView.swift; sourceTree = "<group>"; };
 		FACEFC25D65248688F7CED2E303665CA /* UnsplashService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UnsplashService.swift; sourceTree = "<group>"; };
 		FACE00000000000000000CB2 /* OnboardingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		FACE00000000000000000CB3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -184,6 +188,8 @@
 				FACE992A95664E1B9241C5B026BEC19A /* EditorViewModel.swift */,
 				FACE328FDDA049EB82151D3286D2910E /* EmojiPickerView.swift */,
 				FACE979D46AC4955858CC46E0E5F9E23 /* FilterTabView.swift */,
+				FACE00000000000000000CB4 /* GiphyService.swift */,
+				FACE00000000000000000CB5 /* GiphyPickerView.swift */,
 				FACEBFBF9F1549ADA817774AB2676E35 /* FilterType.swift */,
 				FACEA37C90AD4611A3BDDF23B2C17155 /* ImageProcessor.swift */,
 				FACE977911454C1AAEF9DF7833F5D569 /* InteractiveButton.swift */,
@@ -434,6 +440,8 @@
 				B0DYD7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift in Sources */,
 				B0DYE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift in Sources */,
 				B0DYF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift in Sources */,
+				B0DY00000000000000000CB4 /* GiphyService.swift in Sources */,
+				B0DY00000000000000000CB5 /* GiphyPickerView.swift in Sources */,
 				B0DY00000000000000000CB2 /* OnboardingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

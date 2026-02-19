@@ -525,10 +525,40 @@ class EditorViewModel: ObservableObject {
     // MARK: - Sticker Management
     
     func addSticker(_ content: String, type: StickerType = .emoji, color: Color = .white) {
+        if type == .giphy {
+            addGiphySticker(url: content)
+            return
+        }
         didChange()
         let newSticker = Sticker(content: content, type: type, color: color)
         stickers.append(newSticker)
         updateProcessedImage()
+    }
+    
+    func addGiphySticker(url: String) {
+        let stickerId = UUID()
+        let filename = "giphy_\(stickerId.uuidString).png"
+        
+        Task {
+            guard let downloadURL = URL(string: url) else { return }
+            do {
+                let (data, _) = try await URLSession.shared.data(from: downloadURL)
+                guard let image = UIImage(data: data) else { return }
+                
+                // Save to documents
+                let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(filename)
+                try data.write(to: documentsURL)
+                
+                await MainActor.run {
+                    self.didChange()
+                    let newSticker = Sticker(id: stickerId, content: filename, type: .giphy)
+                    self.stickers.append(newSticker)
+                    self.updateProcessedImage()
+                }
+            } catch {
+                print("Error downloading Giphy sticker: \(error)")
+            }
+        }
     }
     
     func updateSticker(_ sticker: Sticker) {

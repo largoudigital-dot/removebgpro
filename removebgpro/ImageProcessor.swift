@@ -500,6 +500,12 @@ class ImageProcessor {
                  if let assetImage = UIImage(named: sticker.content) {
                      assetImage.draw(in: rect)
                  }
+            } else if sticker.type == .giphy {
+                // Giphy stickers are downloaded to Documents directory
+                let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(sticker.content)
+                if let giphyImage = UIImage(contentsOfFile: url.path) {
+                    giphyImage.draw(in: rect)
+                }
             } else {
                 // Render SF Symbol
                 if let systemImage = UIImage(systemName: sticker.content) {

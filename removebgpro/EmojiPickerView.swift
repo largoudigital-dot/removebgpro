@@ -9,7 +9,7 @@ struct EmojiPickerView: View {
     
     enum PickerTab: String, CaseIterable {
         case emoji = "Emoji"
-        case sticker = "Sticker"
+        case giphy = "GIPHY"
     }
     
     // Data Models
@@ -45,19 +45,8 @@ struct EmojiPickerView: View {
         ], type: .emoji)
     ]
     
-    // --- STICKER DATA (Local Assets) ---
-    private let stickerCategories: [Category] = [
-        Category(name: "Trending", icon: "flame.fill", items: [
-            "sticker_cool_text", "sticker_wow_bubble", "sticker_fire_flame", "sticker_omg_text", "sticker_100_score"
-        ], type: .imageAsset),
-        Category(name: "Love", icon: "heart.fill", items: [
-            "sticker_pixel_heart"
-        ], type: .imageAsset),
-        // Add more local asset names here as you add them to Assets.xcassets
-    ]
-    
     var currentCategories: [Category] {
-        selectedTab == .emoji ? emojiCategories : stickerCategories
+        emojiCategories
     }
     
     let columns = [GridItem(.adaptive(minimum: 45))]
@@ -94,83 +83,72 @@ struct EmojiPickerView: View {
             .background(.thinMaterial)
             
             // Main Grid
-            ScrollView {
-                ScrollViewReader { proxy in
-                    VStack(alignment: .leading, spacing: 20) {
-                        ForEach(Array(currentCategories.enumerated()), id: \.offset) { index, category in
-                            VStack(alignment: .leading) {
-                                Text(category.name)
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .padding(.horizontal)
-                                    .id(index) // For scrolling
-                                
-                                LazyVGrid(columns: columns, spacing: 15) {
-                                    ForEach(category.items, id: \.self) { item in
-                                        Button(action: {
-                                            // Handle Selection
-                                            if category.type == .emoji {
-                                                onSelected(item, .emoji, .clear) // Color ignored for emoji
-                                            } else if category.type == .imageAsset {
-                                                onSelected(item, .imageAsset, .clear)
-                                            } else {
-                                                onSelected(item, .systemImage, .white) // Default white for stickers
-                                            }
-                                        }) {
-                                            if category.type == .emoji {
+            if selectedTab == .giphy {
+                GiphyPickerView(onSelected: { url in
+                    onSelected(url, .giphy, .clear)
+                })
+            } else {
+                ScrollView {
+                    ScrollViewReader { proxy in
+                        VStack(alignment: .leading, spacing: 20) {
+                            ForEach(Array(currentCategories.enumerated()), id: \.offset) { index, category in
+                                VStack(alignment: .leading) {
+                                    Text(category.name)
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                        .padding(.horizontal)
+                                        .id(index) // For scrolling
+                                    
+                                    LazyVGrid(columns: columns, spacing: 15) {
+                                        ForEach(category.items, id: \.self) { item in
+                                            Button(action: {
+                                                // Handle Selection
+                                                onSelected(item, .emoji, .clear)
+                                            }) {
                                                 Text(item)
                                                     .font(.system(size: 35))
-                                            } else if category.type == .imageAsset {
-                                                Image(item)
-                                                    .resizable()
-                                                    .aspectRatio(contentMode: .fit)
-                                                    .frame(width: 40, height: 40)
-                                            } else {
-                                                Image(systemName: item)
-                                                    .resizable()
-                                                    .aspectRatio(contentMode: .fit)
-                                                    .frame(width: 30, height: 30)
-                                                    .foregroundColor(.primary)
                                             }
+                                            .frame(width: 50, height: 50)
+                                            .background(Color.secondary.opacity(0.1))
+                                            .cornerRadius(8)
                                         }
-                                        .frame(width: 50, height: 50)
-                                        .background(Color.secondary.opacity(0.1))
-                                        .cornerRadius(8)
                                     }
+                                    .padding(.horizontal)
                                 }
-                                .padding(.horizontal)
                             }
                         }
-                    }
-                    .padding(.bottom, 20)
-                    .onChange(of: selectedCategoryIndex) { newIndex in
-                        withAnimation {
-                            proxy.scrollTo(newIndex, anchor: .top)
+                        .padding(.bottom, 20)
+                        .onChange(of: selectedCategoryIndex) { newIndex in
+                            withAnimation {
+                                proxy.scrollTo(newIndex, anchor: .top)
+                            }
                         }
                     }
                 }
             }
             
             // Bottom Category Bar
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 20) {
-                    ForEach(Array(currentCategories.enumerated()), id: \.offset) { index, category in
-                        Button(action: {
-                            selectedCategoryIndex = index
-                        }) {
-                            Image(systemName: category.icon)
-                                .font(.system(size: 20))
-                                .foregroundColor(selectedCategoryIndex == index ? .blue : .gray)
-                                .padding(8)
-                                .background(selectedCategoryIndex == index ? Color.blue.opacity(0.1) : Color.clear)
-                                .clipShape(Circle())
+            if selectedTab != .giphy {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 20) {
+                        ForEach(Array(currentCategories.enumerated()), id: \.offset) { index, category in
+                            Button(action: {
+                                selectedCategoryIndex = index
+                            }) {
+                                Image(systemName: category.icon)
+                                    .font(.system(size: 20))
+                                    .foregroundColor(selectedCategoryIndex == index ? .blue : .gray)
+                                    .padding(8)
+                                    .background(selectedCategoryIndex == index ? Color.blue.opacity(0.1) : Color.clear)
+                                    .clipShape(Circle())
+                            }
                         }
                     }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
                 }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
+                .background(.ultraThinMaterial)
             }
-            .background(.ultraThinMaterial)
         }
         .background(Color("BackgroundColor")) // Use system or app background
     }
