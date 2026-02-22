@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B0DY00000000000000000CB1 /* CheckerboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB1 /* CheckerboardView.swift */; };
+		B0DY00000000000000000CB2 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB2 /* OnboardingView.swift */; };
+		B0DY00000000000000000CB3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB3 /* PrivacyInfo.xcprivacy */; };
+		B0DY00000000000000000CB4 /* GiphyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB4 /* GiphyService.swift */; };
+		B0DY00000000000000000CB5 /* GiphyPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB5 /* GiphyPickerView.swift */; };
 		B0DY054BD3FD4BFD875FF3823F2A1EFB /* ZoomableImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE849087624D1E9C8CBF5BF8966B9D /* ZoomableImageView.swift */; };
 		B0DY055D5A8241AAA9C3EC8B5EBFFF5E /* UnsplashPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE0D4C1EF14E7E9641D4831A2E649E /* UnsplashPickerView.swift */; };
 		B0DY06B42F1F4A218398EAF27E85E0AF /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE992A95664E1B9241C5B026BEC19A /* EditorViewModel.swift */; };
@@ -15,10 +20,8 @@
 		B0DY2D4CC337407980D6B86FFD355068 /* CropEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEB3CCE1EC41318E2BBCC4188B078E /* CropEditorView.swift */; };
 		B0DY32898C6740259419E9F330C15197 /* FilterType.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEBFBF9F1549ADA817774AB2676E35 /* FilterType.swift */; };
 		B0DY3CBE5D3D413EAC926DBF850EBF3C /* CanvasTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE8ABEEA0349C786503A4247D9466E /* CanvasTabView.swift */; };
-		B0DY00000000000000000CB1 /* CheckerboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB1 /* CheckerboardView.swift */; };
 		B0DY40363FB44793BD06C2325792DC87 /* EmojiPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE328FDDA049EB82151D3286D2910E /* EmojiPickerView.swift */; };
 		B0DY47F1992743059A327EEC0833B842 /* CropOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE0579567A443E97D1DCB04A607CBD /* CropOverlayView.swift */; };
-		B0DY4D48E6FD46019F31CF46C2A63188 /* StickerPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE62939FE34132A79C88B1B282B220 /* StickerPreviewView.swift */; };
 		B0DY5344F1F54DEDA957054F76F8832A /* UnsplashService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEFC25D65248688F7CED2E303665CA /* UnsplashService.swift */; };
 		B0DY59D763E047C69FCA87FFE845675A /* CornerFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEA366E8204D76A41C9E9C2D7A9138 /* CornerFrame.swift */; };
 		B0DY6B0D68B24923BB09A77108719AE3 /* TextEditorStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE8E9509FF42E08C3BAE1C4022C6D1 /* TextEditorStyles.swift */; };
@@ -41,13 +44,9 @@
 		B0DYD7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACED7E2F2B7436DB36519E9F330C154 /* CameraPicker.swift */; };
 		B0DYD7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = FACED7E2F2B7436DB36519E9F330C155 /* Localizable.xcstrings */; };
 		B0DYE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEE7E2F2B7436DB36519E9F330C156 /* LanguageManager.swift */; };
-		B0DYF745828C4D3F907FC7867A4D8C29 /* WebPConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE2F57C29846839A63F73BFF5544A1 /* WebPConverter.swift */; };
+		B0DYF745828C4D3F907FC7867A4D8C29 /* StickerExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE2F57C29846839A63F73BFF5544A1 /* StickerExporter.swift */; };
 		B0DYF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift */; };
 		B0DYF85A12C648D88F090FB6AFB6E9AE /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACEA37C90AD4611A3BDDF23B2C17155 /* ImageProcessor.swift */; };
-		B0DY00000000000000000CB4 /* GiphyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB4 /* GiphyService.swift */; };
-		B0DY00000000000000000CB5 /* GiphyPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB5 /* GiphyPickerView.swift */; };
-		B0DY00000000000000000CB2 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB2 /* OnboardingView.swift */; };
-		B0DY00000000000000000CB3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000CB3 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,16 +70,19 @@
 		915A336D2F326A4F001FAAD8 /* removebgpro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = removebgpro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		915A337A2F326A52001FAAD8 /* removebgproTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = removebgproTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		915A33842F326A52001FAAD8 /* removebgproUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = removebgproUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		FACE00000000000000000CB1 /* CheckerboardView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CheckerboardView.swift; sourceTree = "<group>"; };
+		FACE00000000000000000CB2 /* OnboardingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		FACE00000000000000000CB3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		FACE00000000000000000CB4 /* GiphyService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GiphyService.swift; sourceTree = "<group>"; };
+		FACE00000000000000000CB5 /* GiphyPickerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GiphyPickerView.swift; sourceTree = "<group>"; };
 		FACE01DAB7574AE1BA67C324E08E842B /* Assets.xcassets */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FACE0579567A443E97D1DCB04A607CBD /* CropOverlayView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CropOverlayView.swift; sourceTree = "<group>"; };
 		FACE089F44EB4731A30E689B31BCCA16 /* StyledImageButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StyledImageButton.swift; sourceTree = "<group>"; };
 		FACE0D4C1EF14E7E9641D4831A2E649E /* UnsplashPickerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UnsplashPickerView.swift; sourceTree = "<group>"; };
-		FACE00000000000000000CB1 /* CheckerboardView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CheckerboardView.swift; sourceTree = "<group>"; };
 		FACE1164C49F4F8181B6BCA1F0B35D6C /* TextItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextItem.swift; sourceTree = "<group>"; };
-		FACE2F57C29846839A63F73BFF5544A1 /* WebPConverter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WebPConverter.swift; sourceTree = "<group>"; };
+		FACE2F57C29846839A63F73BFF5544A1 /* StickerExporter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StickerExporter.swift; sourceTree = "<group>"; };
 		FACE328FDDA049EB82151D3286D2910E /* EmojiPickerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EmojiPickerView.swift; sourceTree = "<group>"; };
 		FACE58A2BEF64F1CBFA1C117BB473B5D /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		FACE62939FE34132A79C88B1B282B220 /* StickerPreviewView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StickerPreviewView.swift; sourceTree = "<group>"; };
 		FACE68BE2B7E4977B05412BA0E75240B /* AdjustmentTabView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AdjustmentTabView.swift; sourceTree = "<group>"; };
 		FACE7EBD11984C429858A1A8E435AAAE /* BackgroundRemovalService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BackgroundRemovalService.swift; sourceTree = "<group>"; };
 		FACE849087624D1E9C8CBF5BF8966B9D /* ZoomableImageView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ZoomableImageView.swift; sourceTree = "<group>"; };
@@ -107,11 +109,7 @@
 		FACEED5CC97743E4B228BB479606E80B /* ColorsTabView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ColorsTabView.swift; sourceTree = "<group>"; };
 		FACEF007E95348D5AD7CCDCFFBFF6839 /* ShadowTabView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ShadowTabView.swift; sourceTree = "<group>"; };
 		FACEF7E2F2B7436DB36519E9F330C157 /* LanguagePickerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LanguagePickerView.swift; sourceTree = "<group>"; };
-		FACE00000000000000000CB4 /* GiphyService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GiphyService.swift; sourceTree = "<group>"; };
-		FACE00000000000000000CB5 /* GiphyPickerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GiphyPickerView.swift; sourceTree = "<group>"; };
 		FACEFC25D65248688F7CED2E303665CA /* UnsplashService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UnsplashService.swift; sourceTree = "<group>"; };
-		FACE00000000000000000CB2 /* OnboardingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		FACE00000000000000000CB3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -195,7 +193,6 @@
 				FACE977911454C1AAEF9DF7833F5D569 /* InteractiveButton.swift */,
 				FACEF007E95348D5AD7CCDCFFBFF6839 /* ShadowTabView.swift */,
 				FACE8917C60C48C4BB054464AB83FAE3 /* Sticker.swift */,
-				FACE62939FE34132A79C88B1B282B220 /* StickerPreviewView.swift */,
 				FACE089F44EB4731A30E689B31BCCA16 /* StyledImageButton.swift */,
 				FACEB6A80B7E4FE2A13F2AE84ABC7CB5 /* TextEditorOverlay.swift */,
 				FACE8E9509FF42E08C3BAE1C4022C6D1 /* TextEditorStyles.swift */,
@@ -203,7 +200,7 @@
 				FACE0D4C1EF14E7E9641D4831A2E649E /* UnsplashPickerView.swift */,
 				FACEFC25D65248688F7CED2E303665CA /* UnsplashService.swift */,
 				FACECAD6F2A542E4BC9137FFBA9E576C /* Utilities.swift */,
-				FACE2F57C29846839A63F73BFF5544A1 /* WebPConverter.swift */,
+				FACE2F57C29846839A63F73BFF5544A1 /* StickerExporter.swift */,
 				FACE849087624D1E9C8CBF5BF8966B9D /* ZoomableImageView.swift */,
 				FACEDA1B8A3B46F9BCD134B4A48D1093 /* removebgproApp.swift */,
 				FACE01DAB7574AE1BA67C324E08E842B /* Assets.xcassets */,
@@ -423,7 +420,6 @@
 				B0DYD11C2CC449C88B2C866A51B01979 /* InteractiveButton.swift in Sources */,
 				B0DYD2D4545F42018680C4EEFB84850C /* ShadowTabView.swift in Sources */,
 				B0DYC879E47B44B5A95CAD94E47A40B1 /* Sticker.swift in Sources */,
-				B0DY4D48E6FD46019F31CF46C2A63188 /* StickerPreviewView.swift in Sources */,
 				B0DYB9C639D844D2B8B2CE261AEC23C1 /* StyledImageButton.swift in Sources */,
 				B0DYCC5F96D845649B89F50ABBF00479 /* TextEditorOverlay.swift in Sources */,
 				B0DY6B0D68B24923BB09A77108719AE3 /* TextEditorStyles.swift in Sources */,
@@ -431,7 +427,7 @@
 				B0DY055D5A8241AAA9C3EC8B5EBFFF5E /* UnsplashPickerView.swift in Sources */,
 				B0DY5344F1F54DEDA957054F76F8832A /* UnsplashService.swift in Sources */,
 				B0DYC3D66BA6466E97148821E6A4B495 /* Utilities.swift in Sources */,
-				B0DYF745828C4D3F907FC7867A4D8C29 /* WebPConverter.swift in Sources */,
+				B0DYF745828C4D3F907FC7867A4D8C29 /* StickerExporter.swift in Sources */,
 				B0DY054BD3FD4BFD875FF3823F2A1EFB /* ZoomableImageView.swift in Sources */,
 				B0DYB79EA6AC452CA1DF8C7BAC1708E1 /* removebgproApp.swift in Sources */,
 				B0DYA7E2F2B7436DB36519E9F330C151 /* Project.swift in Sources */,
@@ -608,6 +604,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = ClearCut;
+				INFOPLIST_KEY_LSApplicationQueriesSchemes = whatsapp;
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Wir speichern deine bearbeiteten Fotos in deiner Mediathek.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Wir benötigen Zugriff auf deine Fotos, um sie zu bearbeiten und zu speichern.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -647,6 +644,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = ClearCut;
+				INFOPLIST_KEY_LSApplicationQueriesSchemes = whatsapp;
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Wir speichern deine bearbeiteten Fotos in deiner Mediathek.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Wir benötigen Zugriff auf deine Fotos, um sie zu bearbeiten und zu speichern.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

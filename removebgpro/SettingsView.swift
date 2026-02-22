@@ -4,6 +4,9 @@ import StoreKit
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingLanguagePicker = false
+    @State private var showingDeleteConfirmation = false
+    @State private var showingPrivacy = false
+    @State private var showingTerms = false
     
     var body: some View {
         ZStack {
@@ -21,7 +24,7 @@ struct SettingsView: View {
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(.white)
                     Spacer()
-                    Button(action: { dismiss() }) {
+                    InteractiveButton(action: { dismiss() }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 30))
                             .foregroundColor(.white.opacity(0.6))
@@ -34,11 +37,13 @@ struct SettingsView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         SettingsGroup(title: "App") {
-                            Button(action: { showingLanguagePicker = true }) {
+                            InteractiveButton(action: { showingLanguagePicker = true }) {
                                 SettingsRow(icon: "globe", title: "Sprache", color: .purple)
                             }
                             
-                            Button(action: {
+                            Divider().background(Color.white.opacity(0.1)).padding(.leading, 64)
+                            
+                            InteractiveButton(action: {
                                 if let url = URL(string: "https://devlargou.com/") {
                                     UIApplication.shared.open(url)
                                 }
@@ -46,7 +51,9 @@ struct SettingsView: View {
                                 SettingsRow(icon: "info.circle", title: "Über die App", color: .blue)
                             }
                             
-                            Button(action: {
+                            Divider().background(Color.white.opacity(0.1)).padding(.leading, 64)
+                            
+                            InteractiveButton(action: {
                                 if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
                                     SKStoreReviewController.requestReview(in: scene)
                                 }
@@ -54,12 +61,18 @@ struct SettingsView: View {
                                 SettingsRow(icon: "star", title: "App bewerten", color: .yellow)
                             }
                             
-                            Button(action: {
-                                let url = URL(string: "https://apps.apple.com/app/id6741484845")! // Placeholder ID
+                            Divider().background(Color.white.opacity(0.1)).padding(.leading, 64)
+                            
+                            InteractiveButton(action: {
+                                let url = URL(string: "https://apps.apple.com/app/id6741484845")!
                                 let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-                                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                                   let rootVC = windowScene.windows.first?.rootViewController {
-                                    rootVC.present(activityVC, animated: true)
+                                if let topVC = UIApplication.topViewController() {
+                                    if let popover = activityVC.popoverPresentationController {
+                                        popover.sourceView = topVC.view
+                                        popover.sourceRect = CGRect(x: topVC.view.bounds.midX, y: topVC.view.bounds.midY, width: 0, height: 0)
+                                        popover.permittedArrowDirections = []
+                                    }
+                                    topVC.present(activityVC, animated: true)
                                 }
                             }) {
                                 SettingsRow(icon: "square.and.arrow.up", title: "App teilen", color: .green)
@@ -67,7 +80,7 @@ struct SettingsView: View {
                         }
                         
                         SettingsGroup(title: "Support") {
-                            Button(action: {
+                            InteractiveButton(action: {
                                 if let url = URL(string: "mailto:support@devlargou.com") {
                                     UIApplication.shared.open(url)
                                 }
@@ -75,21 +88,26 @@ struct SettingsView: View {
                                 SettingsRow(icon: "envelope", title: "Kontakt", color: .orange)
                             }
                             
-                            Button(action: {
-                                if let url = URL(string: "https://devlargou.com/privacy.html") {
-                                    UIApplication.shared.open(url)
-                                }
+                            Divider().background(Color.white.opacity(0.1)).padding(.leading, 64)
+                            
+                            InteractiveButton(action: {
+                                showingPrivacy = true
                             }) {
-                                SettingsRow(icon: "doc.text", title: "Datenschutz", color: .gray)
+                                SettingsRow(icon: "lock.shield", title: "Datenschutz", color: .gray)
+                            }
+                            
+                            Divider().background(Color.white.opacity(0.1)).padding(.leading, 64)
+                            
+                            InteractiveButton(action: {
+                                showingTerms = true
+                            }) {
+                                SettingsRow(icon: "doc.text", title: "AGB", color: .gray)
                             }
                         }
                         
                         SettingsGroup(title: "Aktionen") {
-                            Button(action: {
-                                // Clear projects logic
-                                UserDefaults.standard.removeObject(forKey: "recent_projects_v2")
-                                ProjectManager.shared.recentProjects = []
-                                AppHaptics.medium()
+                            InteractiveButton(action: {
+                                showingDeleteConfirmation = true
                             }) {
                                 SettingsRow(icon: "trash", title: "Alle Projekte löschen", color: .red, showChevron: false)
                             }
@@ -99,9 +117,24 @@ struct SettingsView: View {
                 }
             }
         }
+        .alert("Alle Projekte löschen?", isPresented: $showingDeleteConfirmation) {
+            Button("Abbrechen", role: .cancel) { }
+            Button("Alle löschen", role: .destructive) {
+                ProjectManager.shared.deleteAllProjects()
+                AppHaptics.heavy()
+            }
+        } message: {
+            Text("Alle gespeicherten Projekte werden unwiderruflich gelöscht.")
+        }
         .sheet(isPresented: $showingLanguagePicker) {
             LanguagePickerView()
                 .environment(\.locale, LanguageManager.shared.locale)
+        }
+        .sheet(isPresented: $showingPrivacy) {
+            LegalView(type: .privacy)
+        }
+        .sheet(isPresented: $showingTerms) {
+            LegalView(type: .terms)
         }
     }
 }

@@ -141,6 +141,7 @@ struct EditorView: View {
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
+        // Sticker preview sheet removed as per user request
         .sheet(isPresented: $showingUnsplashPicker) {
             UnsplashPickerView(onSelect: { image in
                 viewModel.setBackgroundImage(image)
@@ -168,7 +169,7 @@ struct EditorView: View {
                 // Detail Bar
                 HStack(spacing: 0) {
                     // Separated Back Button
-                    InteractiveButton(haptic: false, action: {
+                    InteractiveButton(haptic: true, action: {
                         withAnimation(AppMotion.snappy) {
                             if let _ = selectedAdjustmentParameter {
                                 selectedAdjustmentParameter = nil
@@ -261,22 +262,8 @@ struct EditorView: View {
                         .frame(width: 44, height: 44)
                 }
 
-                InteractiveButton(action: {
-                    viewModel.saveProject { success, message in
-                        if !success {
-                            saveMessage = message
-                            showingSaveAlert = true
-                        } else {
-                            AppHaptics.success()
-                        }
-                    }
-                }) {
-                    Image(systemName: "square.and.arrow.down")
-                        .font(.system(size: 20, weight: .regular))
-                        .foregroundColor(.primary)
-                        .frame(width: 44, height: 44)
-                }
-                
+
+
                 Spacer()
                 
                 InteractiveButton(action: {
@@ -442,7 +429,7 @@ struct EditorView: View {
                                 }
                             },
                             isEditingText: viewModel.showingTextEditor,
-                            persistentSelection: viewModel.selectedTab == .stickers || viewModel.selectedTab == .crop,
+                            persistentSelection: viewModel.selectedTab == .crop,
                             shadowRadius: viewModel.shadowRadius,
                             shadowX: viewModel.shadowX,
                             shadowY: viewModel.shadowY,
@@ -579,15 +566,16 @@ struct EditorView: View {
     private var compareButton: some View {
         ZStack {
             Image(systemName: "square.split.2x1")
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 20, weight: .bold))
                 .foregroundColor(isShowingOriginal ? .blue : .primary)
-                .frame(width: 44, height: 44)
-                .frame(width: 44, height: 44)
+                .frame(width: 54, height: 54)
+                .frame(width: 54, height: 54)
                 .background(.ultraThinMaterial)
                 .background(Color.white.opacity(0.5))
                 .clipShape(Circle())
                 .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
         }
+        .contentShape(Circle().size(CGSize(width: 64, height: 64)).offset(CGPoint(x: -5, y: -5)))
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
@@ -610,20 +598,21 @@ struct EditorView: View {
         InteractiveButton(action: {
             let newItem = TextItem()
             tempTextItem = newItem
-            viewModel.addTextItem(newItem) // Add immediately so it appears on canvas
+            viewModel.addTextItem(newItem)
             withAnimation(AppMotion.snappy) {
                 viewModel.showingTextEditor = true
             }
         }) {
             Image(systemName: "t.square")
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.primary)
-                .frame(width: 44, height: 44)
+                .frame(width: 54, height: 54)
                 .background(.ultraThinMaterial)
                 .background(Color.white.opacity(0.5))
                 .clipShape(Circle())
                 .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
         }
+        .contentShape(Circle())
     }
     
     private var stickerButton: some View {
@@ -631,14 +620,15 @@ struct EditorView: View {
             viewModel.showingEmojiPicker = true
         }) {
             Image(systemName: "face.smiling")
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.primary)
-                .frame(width: 44, height: 44)
+                .frame(width: 54, height: 54)
                 .background(.ultraThinMaterial)
                 .background(Color.white.opacity(0.5))
                 .clipShape(Circle())
                 .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
         }
+        .contentShape(Circle())
     }
     
     private var tabBar: some View {
@@ -655,12 +645,13 @@ struct EditorView: View {
                                 if tab == .unsplash {
                                     showingUnsplashPicker = true
                                 } else {
+                                    AppHaptics.selection()
                                     viewModel.selectedTab = tab
                                     if tab == .stickers {
                                         viewModel.stickerFlowStep = .size
-                                        // Standard configuration for stickers: 1:1 and 512px
-                                        withAnimation(AppMotion.snappy) {
-                                            viewModel.selectedAspectRatio = .square
+                                        viewModel.selectedAspectRatio = .square
+                                        // Delay heavy processing so UI navigation is instant
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                                             viewModel.applyStickerSize(512)
                                         }
                                     }
@@ -728,34 +719,22 @@ struct StickerExportTabView: View {
     }
     
     var body: some View {
-        HStack(spacing: 8) {
-            Spacer()
-            
-            HStack(spacing: 6) {
-                sizeButton(size: 512, label: "512*512 px")
-                sizeButton(size: 408, label: "408*408 px")
-                sizeButton(size: 300, label: "300*300 px")
-                
-                // System Color Picker Button
-                InteractiveButton(action: {
-                    showingColorPicker = true
-                }) {
-                    ZStack {
-                        // Visual Indicator
+        InteractiveButton(action: {
+            showingColorPicker = true
+        }) {
+            ZStack {
+                Circle()
+                    .fill(AngularGradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red], center: .center))
+                    .frame(width: 54, height: 54)
+                    .overlay(
                         Circle()
-                            .fill(AngularGradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red], center: .center))
-                            .frame(width: 44, height: 44)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white, lineWidth: 2)
-                            )
-                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                    }
-                }
+                            .stroke(Color.white, lineWidth: 2)
+                    )
+                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
             }
-            
-            Spacer()
         }
+        .frame(maxWidth: .infinity)
+
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
         .sheet(item: $shareSheetItem) { item in
@@ -765,37 +744,6 @@ struct StickerExportTabView: View {
             SpectrumColorPickerView(color: $viewModel.stickerOutlineColor)
                 .presentationDetents([.fraction(0.45), .medium])
                 .presentationDragIndicator(.visible)
-        }
-    }
-    private func sizeButton(size: CGFloat, label: String) -> some View {
-        InteractiveButton(action: {
-            withAnimation(AppMotion.snappy) {
-                viewModel.applyStickerSize(size)
-            }
-            AppHaptics.light()
-        }) {
-            Text(label)
-                .font(.system(size: 11, weight: .bold)) // Compact font for single-screen fit
-                .foregroundColor(viewModel.stickerSize == size ? .white : .primary)
-                .frame(width: 76, height: 44)
-                .background(
-                    ZStack {
-                        CheckerboardView(gridSize: 10)
-                            .opacity(0.4)
-                            
-                        if viewModel.stickerSize == size {
-                            LinearGradient(colors: [Color(hex: "#3B82F6"), Color(hex: "#2563EB")], startPoint: .topLeading, endPoint: .bottomTrailing)
-                        } else {
-                            Color.primary.opacity(0.06)
-                        }
-                    }
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(viewModel.stickerSize == size ? Color.clear : Color.primary.opacity(0.1), lineWidth: 1)
-                )
-                .shadow(color: viewModel.stickerSize == size ? Color.blue.opacity(0.2) : Color.clear, radius: 8, x: 0, y: 4)
         }
     }
 }
@@ -835,31 +783,50 @@ struct TabButton: View {
     let isActive: Bool
     let action: () -> Void
     
+    @State private var isPressed = false
+    
     var body: some View {
-        InteractiveButton(action: action) {
-            VStack(spacing: 4) {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: tab.iconName)
-                        .font(.system(size: isSelected ? 24 : 22, weight: isSelected ? .semibold : .regular))
-                        .frame(width: 28, height: 28)
-                        .scaleEffect(isSelected ? 1.1 : 1.0)
-                        .animation(AppMotion.bouncy, value: isSelected)
-                    
-                    if isActive {
-                        Circle()
-                            .fill(Color.blue)
-                            .frame(width: 6, height: 6)
-                            .offset(x: 4, y: -4)
+        VStack(spacing: 4) {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: tab.iconName)
+                    .font(.system(size: isSelected ? 24 : 22, weight: isSelected ? .semibold : .regular))
+                    .frame(width: 28, height: 28)
+                    .scaleEffect(isSelected ? 1.1 : 1.0)
+                    .animation(AppMotion.bouncy, value: isSelected)
+                
+                if isActive {
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: 6, height: 6)
+                        .offset(x: 4, y: -4)
+                }
+            }
+            
+            Text(tab.localizedName)
+                .font(.system(size: 10, weight: isSelected ? .bold : .medium))
+        }
+        .foregroundColor(isSelected ? .blue : .primary.opacity(0.6))
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .scaleEffect(isPressed ? 0.94 : 1.0)
+        .animation(.interactiveSpring(response: 0.15, dampingFraction: 0.8), value: isPressed)
+        .contentShape(Rectangle())
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    if !isPressed {
+                        isPressed = true
+                        AppHaptics.light()
                     }
                 }
-                
-                Text(tab.localizedName)
-                    .font(.system(size: 10, weight: isSelected ? .bold : .medium))
-            }
-            .foregroundColor(isSelected ? .blue : .primary.opacity(0.6))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-        }
+                .onEnded { value in
+                    isPressed = false
+                    // Only fire action if finger didn't move far (not a scroll)
+                    if abs(value.translation.width) < 10 && abs(value.translation.height) < 10 {
+                        action()
+                    }
+                }
+        )
     }
 }
 

@@ -37,6 +37,12 @@ class ProjectManager: ObservableObject {
         persist()
     }
     
+    func deleteAllProjects() {
+        recentProjects.removeAll()
+        persist()
+        print("🗑️ ProjectManager: All projects deleted.")
+    }
+    
     private func loadProjects() {
         if let data = UserDefaults.standard.data(forKey: projectsKey),
            let decoded = try? JSONDecoder().decode([Project].self, from: data) {

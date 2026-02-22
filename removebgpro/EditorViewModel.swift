@@ -586,6 +586,7 @@ class EditorViewModel: ObservableObject {
         self.stickerSize = size
         applyAutomaticStickerOutline()
         updateProcessedImage()
+        prepareStickerPreview()
     }
     
     // MARK: - Text Management
@@ -786,9 +787,10 @@ class EditorViewModel: ObservableObject {
             return
         }
         
+        saveStatus = .saving
+        
         // Generate final image with stickers burned in
-        var params = self.currentProcessingParameters
-        params.outlineWidth = 0 // No outline for general save
+        let params = self.currentProcessingParameters
         
         let finalImage = self.imageProcessor.processImageWithCrop(original: foreground, params: params) ?? foreground
 
@@ -839,8 +841,10 @@ class EditorViewModel: ObservableObject {
                 
                 DispatchQueue.main.async {
                     if success {
+                        self.saveStatus = .saved
                         completion(true, "Foto gespeichert")
                     } else {
+                        self.saveStatus = .idle
                         print("Save error: \(String(describing: error))")
                         completion(false, "Fehler beim Speichern")
                     }
@@ -852,118 +856,245 @@ class EditorViewModel: ObservableObject {
     func shareImage() {
         guard let foreground = foregroundImage ?? originalImage else { return }
         
-        var params = self.currentProcessingParameters
-        params.outlineWidth = 0 // No outline for sharing
+        let params = self.currentProcessingParameters
         
         let finalImage = self.imageProcessor.processImageWithCrop(original: foreground, params: params) ?? foreground
         
-        // Use PNG if there's transparency, JPG otherwise for sharing
-        let data = isBackgroundTransparent ? finalImage.pngData() : finalImage.jpegData(compressionQuality: 0.8)
-        guard let finalData = data, let finalImage = UIImage(data: finalData) else { return }
+        // Always use PNG for sharing as requested
+        guard let data = finalImage.pngData() else { return }
         
-        let activityVC = UIActivityViewController(activityItems: [finalImage], applicationActivities: nil)
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootVC = windowScene.windows.first?.rootViewController {
+        // Save to temporary file to enforce PNG format during sharing
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".png")
+        do {
+            try data.write(to: tempURL)
             
-            // For iPad support
-            if let popover = activityVC.popoverPresentationController {
-                popover.sourceView = rootVC.view
-                popover.sourceRect = CGRect(x: rootVC.view.bounds.midX, y: rootVC.view.bounds.midY, width: 0, height: 0)
-                popover.permittedArrowDirections = []
+            let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
+            
+            if let topVC = UIApplication.topViewController() {
+                // For iPad support
+                if let popover = activityVC.popoverPresentationController {
+                    popover.sourceView = topVC.view
+                    popover.sourceRect = CGRect(x: topVC.view.bounds.midX, y: topVC.view.bounds.midY, width: 0, height: 0)
+                    popover.permittedArrowDirections = []
+                }
+                
+                topVC.present(activityVC, animated: true, completion: nil)
             }
-            
-            rootVC.present(activityVC, animated: true, completion: nil)
+        } catch {
+            print("Error saving temporary PNG for sharing: \(error)")
         }
     }
     
     func prepareStickerPreview() {
-        guard var baseImage = foregroundImage ?? originalImage else { return }
-        
-        // 1. Physically CROP the image if a crop rect exists
-        // This ensures the sticker is based ONLY on the visible part.
-        if let rect = appliedCropRect {
-            let imageSize = baseImage.size
-            let cropZone = CGRect(
-                x: rect.minX * imageSize.width,
-                y: rect.minY * imageSize.height,
-                width: rect.width * imageSize.width,
-                height: rect.height * imageSize.height
-            )
+        // Run on background thread to keep UI responsive
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            guard var baseImage = self.foregroundImage ?? self.originalImage else { return }
             
-            let scale = baseImage.scale
-            let scaledCropZone = CGRect(
-                x: cropZone.origin.x * scale,
-                y: cropZone.origin.y * scale,
-                width: cropZone.size.width * scale,
-                height: cropZone.size.height * scale
-            )
-            
-            if let cgImage = baseImage.cgImage,
-               let croppedCg = cgImage.cropping(to: scaledCropZone) {
-                baseImage = UIImage(cgImage: croppedCg, scale: scale, orientation: baseImage.imageOrientation)
+            // 1. Physically CROP the image if a crop rect exists
+            if let rect = self.appliedCropRect {
+                let imageSize = baseImage.size
+                let cropZone = CGRect(
+                    x: rect.minX * imageSize.width,
+                    y: rect.minY * imageSize.height,
+                    width: rect.width * imageSize.width,
+                    height: rect.height * imageSize.height
+                )
+                
+                let scale = baseImage.scale
+                let scaledCropZone = CGRect(
+                    x: cropZone.origin.x * scale,
+                    y: cropZone.origin.y * scale,
+                    width: cropZone.size.width * scale,
+                    height: cropZone.size.height * scale
+                )
+                
+                if let cgImage = baseImage.cgImage,
+                   let croppedCg = cgImage.cropping(to: scaledCropZone) {
+                    baseImage = UIImage(cgImage: croppedCg, scale: scale, orientation: baseImage.imageOrientation)
+                }
             }
-        }
-        
-        // 2. Apply Filters/Adjustments (but NO visual masking/composite here)
-        let params = self.currentProcessingParameters
-        let processedBase = self.imageProcessor.processImage(
-            original: baseImage,
-            filter: params.filter,
-            brightness: params.brightness,
-            contrast: params.contrast,
-            saturation: params.saturation,
-            sharpness: params.sharpness,
-            rotation: params.rotation
-        ) ?? baseImage
-        
-        // 3. Generate final sticker with Outline and Padding
-        // We pass the stickerOutlineWidth explicitly here
-        if let stickerImage = imageProcessor.generateStickerImage(
-            from: processedBase,
-            targetSize: self.stickerSize,
-            outlineWidth: stickerOutlineWidth,
-            outlineColor: stickerOutlineColor
-        ) {
-            DispatchQueue.main.async {
-                self.stickerPreviewImage = stickerImage
-                self.showingStickerPreview = true
+            
+            // 2. Apply Filters/Adjustments
+            let params = self.currentProcessingParameters
+            let processedBase = self.imageProcessor.processImage(
+                original: baseImage,
+                filter: params.filter,
+                brightness: params.brightness,
+                contrast: params.contrast,
+                saturation: params.saturation,
+                sharpness: params.sharpness,
+                rotation: params.rotation
+            ) ?? baseImage
+            
+            // 3. Generate final sticker with Outline and Padding
+            if let stickerImage = self.imageProcessor.generateStickerImage(
+                from: processedBase,
+                targetSize: self.stickerSize,
+                outlineWidth: self.stickerOutlineWidth,
+                outlineColor: self.stickerOutlineColor
+            ) {
+                DispatchQueue.main.async {
+                    self.stickerPreviewImage = stickerImage
+                    // Removed: self.showingStickerPreview = true
+                }
             }
         }
     }
     
     func shareAsSticker(completion: @escaping (Bool) -> Void) {
+        let stickerToUse = stickerPreviewImage
+        
+        guard let stickerImage = stickerToUse else {
+            completion(false)
+            return
+        }
+        
+        // WhatsApp Requirement: Exactly 512x512 pixels
+        let finalSticker: UIImage
+        if stickerImage.size.width != 512 || stickerImage.size.height != 512 {
+            finalSticker = imageProcessor.generateStickerImage(from: stickerImage, targetSize: 512, outlineWidth: stickerOutlineWidth, outlineColor: .white) ?? stickerImage
+        } else {
+            finalSticker = stickerImage
+        }
+        
+        // Create Sticker Data (PNG only)
+        guard let stickerData = StickerExporter.convertToStickerData(image: finalSticker) else {
+            completion(false)
+            return
+        }
+        
+        // Fix 1: Use whatsapp:// only (not /stickerPack) – WhatsApp reads pasteboard itself
+        let whatsappURL = URL(string: "whatsapp://")!
+        let canOpen = UIApplication.shared.canOpenURL(whatsappURL)
+        print("DEBUG: WhatsApp canOpenURL: \(canOpen)")
+        
+        // Fix 2: Explicit NSData cast for pasteboard compatibility
+        let pasteboardItem: [String: Any] = [
+            "net.whatsapp.third-party.sticker": stickerData as NSData
+        ]
+        UIPasteboard.general.setItems([pasteboardItem], options: [.expirationDate: Date().addingTimeInterval(60)])
+        print("DEBUG: Sticker data in pasteboard (\(stickerData.count / 1024) KB). Opening WhatsApp...")
+        
+        UIApplication.shared.open(whatsappURL, options: [:]) { success in
+            print("DEBUG: WhatsApp opened: \(success)")
+            completion(success)
+        }
+    }
+    
+    /// Bypasses the editor and creates a sticker directly from a source image
+    func createExpressSticker(from image: UIImage, completion: @escaping (Bool) -> Void) {
+        // 1. Remove background immediately
+        self.saveStatus = .saving
+        
+        Task {
+            do {
+                if let foreground = try await self.removalService.removeBackground(from: image) {
+                    // 2. Generate clean sticker (512x512 PNG, no UI, default outline)
+                    if let sticker = self.imageProcessor.generateStickerImage(
+                        from: foreground,
+                        targetSize: 512,
+                        outlineWidth: 5, // Subtle default outline for visibility
+                        outlineColor: .white
+                    ) {
+                        await MainActor.run {
+                            // We use a temporary stickerPreviewImage to trigger shareAsSticker
+                            self.stickerPreviewImage = sticker
+                            self.shareAsSticker { success in
+                                self.saveStatus = .idle
+                                completion(success)
+                            }
+                        }
+                    } else {
+                        await MainActor.run {
+                            self.saveStatus = .idle
+                            completion(false)
+                        }
+                    }
+                } else {
+                    await MainActor.run {
+                        self.saveStatus = .idle
+                        completion(false)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    print("Error in express sticker flow: \(error)")
+                    self.saveStatus = .idle
+                    completion(false)
+                }
+            }
+        }
+    }
+    
+    func shareToSystemStickers(completion: @escaping (Bool) -> Void) {
         guard let stickerImage = stickerPreviewImage else {
             completion(false)
             return
         }
         
-        guard let webpData = WebPConverter.convertToWebP(image: stickerImage) else {
+        // Use high-quality PNG for system stickers to preserve transparency
+        guard let pngData = stickerImage.pngData() else {
             completion(false)
             return
         }
         
-        // Save to temporary file
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".webp")
+        // For "Add to Stickers" in iOS 17+, sharing the file URL usually works best
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("sticker_\(UUID().uuidString).png")
+        
         do {
-            try webpData.write(to: tempURL)
+            try pngData.write(to: tempURL)
             
-            // Share the file
-            let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
-            
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let rootVC = windowScene.windows.first?.rootViewController {
+            if let topVC = UIApplication.topViewController() {
+                let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
+                
+                activityVC.completionWithItemsHandler = { (activityType, completed, returnedItems, error) in
+                    try? FileManager.default.removeItem(at: tempURL)
+                    completion(completed)
+                }
                 
                 if let popover = activityVC.popoverPresentationController {
-                    popover.sourceView = rootVC.view
-                    popover.sourceRect = CGRect(x: rootVC.view.bounds.midX, y: rootVC.view.bounds.midY, width: 0, height: 0)
+                    popover.sourceView = topVC.view
+                    popover.sourceRect = CGRect(x: topVC.view.bounds.midX, y: topVC.view.bounds.midY, width: 0, height: 0)
+                    popover.permittedArrowDirections = []
                 }
                 
-                rootVC.present(activityVC, animated: true) {
-                    completion(true)
-                }
+                topVC.present(activityVC, animated: true, completion: nil)
+            } else {
+                completion(false)
             }
         } catch {
+            print("Error saving sticker for system share: \(error)")
+            completion(false)
+        }
+    }
+    
+    private func presentStandardShareSheet(with data: Data, `extension`: String, completion: @escaping (Bool) -> Void) {
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".\(`extension`)")
+        do {
+            try data.write(to: tempURL)
+            let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
+            
+            // CRITICAL: Only call completion when the user is ACTUALLY done with the share sheet
+            activityVC.completionWithItemsHandler = { (activityType, completed, returnedItems, error) in
+                // We call completion with the success status. 
+                // In StickerPreviewView, success == true will dismiss the preview.
+                completion(completed)
+            }
+            
+            if let topVC = UIApplication.topViewController() {
+                if let popover = activityVC.popoverPresentationController {
+                    popover.sourceView = topVC.view
+                    popover.sourceRect = CGRect(x: topVC.view.bounds.midX, y: topVC.view.bounds.midY, width: 0, height: 0)
+                    popover.permittedArrowDirections = []
+                }
+                // Important: Don't call completion(true) in the presentation block!
+                topVC.present(activityVC, animated: true, completion: nil)
+            } else {
+                completion(false)
+            }
+        } catch {
+            print("Error writing temp file for share sheet: \(error)")
             completion(false)
         }
     }
@@ -1110,15 +1241,18 @@ class EditorViewModel: ObservableObject {
                     if success {
                         self.saveStatus = .saved
                         completion(sticker) // Return the image for sharing
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                            if self.saveStatus == .saved {
-                                self.saveStatus = .idle
-                            }
-                        }
                     } else {
                         self.saveStatus = .idle
                         completion(nil)
                     }
+                    
+                    // Reset status after delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        if self.saveStatus == .saved {
+                            self.saveStatus = .idle
+                        }
+                    }
+                    
                     try? FileManager.default.removeItem(at: tempURL)
                 }
             }

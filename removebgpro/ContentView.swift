@@ -4,7 +4,6 @@
 //
 //  Created by Photo Editor
 //
-
 import SwiftUI
 import PhotosUI
 
@@ -31,22 +30,37 @@ struct ContentView: View {
                 )
                 .ignoresSafeArea()
                 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 20) {
                         // Header
                         HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("WILLKOMMEN")
-                                    .font(.system(size: 12, weight: .black))
-                                    .kerning(1.2)
-                                    .foregroundColor(.white.opacity(0.7))
-                                Text("Foto Editor")
-                                    .font(.system(size: 34, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "scissors")
+                                        .font(.system(size: 20, weight: .bold))
+                                        .foregroundStyle(
+                                            LinearGradient(
+                                                colors: [.white, .white.opacity(0.7)],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
+                                        )
+                                    Text("ClearCut")
+                                        .font(.system(size: 32, weight: .black, design: .rounded))
+                                        .foregroundStyle(
+                                            LinearGradient(
+                                                colors: [.white, .white.opacity(0.85)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                }
+                                Text("AI Background Remover")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.white.opacity(0.5))
+                                    .padding(.leading, 2)
                             }
                             Spacer()
-                            Button(action: { showingSettings = true }) {
+                            InteractiveButton(action: { showingSettings = true }) {
                                 Image(systemName: "gearshape.fill")
                                     .font(.system(size: 22))
                                     .foregroundColor(.white)
@@ -57,10 +71,10 @@ struct ContentView: View {
                             }
                         }
                         .padding(.horizontal, 24)
-                        .padding(.top, 20)
+                        .padding(.top, 8)
                         
                         // Main Action Card
-                        VStack(spacing: 24) {
+                        VStack(spacing: 20) {
                             ZStack {
                                 Circle()
                                     .fill(
@@ -70,11 +84,11 @@ struct ContentView: View {
                                             endPoint: .bottomTrailing
                                         )
                                     )
-                                    .frame(width: 160, height: 160)
+                                    .frame(width: 140, height: 140)
                                     .blur(radius: 50)
                                 
                                 Image(systemName: "photo.stack.fill")
-                                    .font(.system(size: 64))
+                                    .font(.system(size: 56))
                                     .foregroundStyle(
                                         LinearGradient(
                                             colors: [Color(hex: "#F472B6"), Color(hex: "#DB2777")],
@@ -85,26 +99,32 @@ struct ContentView: View {
                                     .shadow(color: Color(hex: "#DB2777").opacity(0.6), radius: 25, x: 0, y: 12)
                             }
                             
-                            VStack(spacing: 8) {
+                            VStack(spacing: 6) {
                                 Text("NEUES PROJEKT")
-                                    .font(.system(size: 24, weight: .black))
-                                    .foregroundColor(.white)
+                                    .font(.system(size: 20, weight: .black, design: .rounded))
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [.white, .white.opacity(0.85)],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
                                 Text("Erstelle brillante Ausschnitte & Sticker")
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(.white.opacity(0.7))
+                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                    .foregroundColor(.white.opacity(0.6))
                             }
                             
                             InteractiveButton(action: {
                                 showingSourceSelection = true
                             }) {
-                                HStack {
+                                HStack(spacing: 8) {
                                     Image(systemName: "plus.circle.fill")
                                     Text("Foto auswählen")
                                 }
-                                .font(.system(size: 18, weight: .bold))
+                                .font(.system(size: 17, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
+                                .padding(.vertical, 14)
                                 .background(
                                     LinearGradient(
                                         colors: [Color(hex: "#6366F1"), Color(hex: "#4F46E5")],
@@ -115,9 +135,9 @@ struct ContentView: View {
                                 .cornerRadius(16)
                                 .shadow(color: Color(hex: "#4F46E5").opacity(0.4), radius: 10, x: 0, y: 5)
                             }
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 16)
                         }
-                        .padding(20)
+                        .padding(18)
                         .background(.ultraThinMaterial)
                         .cornerRadius(32)
                         .overlay(
@@ -134,40 +154,79 @@ struct ContentView: View {
                             .opacity(isAnimating ? 1 : 0)
                             .offset(y: isAnimating ? 0 : 20)
                         
+                        Spacer()
+                        
                         // Recent Projects Section
-                        VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 12) {
                             Text("Letzte Projekte")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
+                                .font(.system(size: 20, weight: .black, design: .rounded))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.white, .white.opacity(0.8)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
                                 .padding(.horizontal, 24)
                             
                             if !projectManager.recentProjects.isEmpty {
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     HStack(spacing: 16) {
                                         ForEach(projectManager.recentProjects) { project in
-                                            RecentProjectCard(project: project)
-                                                .onTapGesture {
-                                                    self.selectedImage = nil
-                                                    self.selectedProject = project
-                                                    self.isEditorActive = true
-                                                }
+                                            InteractiveButton(haptic: false, action: {
+                                                self.selectedImage = nil
+                                                self.selectedProject = project
+                                                self.isEditorActive = true
+                                            }) {
+                                                RecentProjectCard(project: project)
+                                                    .contextMenu {
+                                                        Button(action: {
+                                                            self.selectedImage = nil
+                                                            self.selectedProject = project
+                                                            self.isEditorActive = true
+                                                        }) {
+                                                            Label("Öffnen", systemImage: "pencil")
+                                                        }
+                                                        
+                                                        Button(action: {
+                                                            if let thumbnail = project.thumbnail {
+                                                                let activityVC = UIActivityViewController(activityItems: [thumbnail], applicationActivities: nil)
+                                                                if let topVC = UIApplication.topViewController() {
+                                                                    topVC.present(activityVC, animated: true)
+                                                                }
+                                                            }
+                                                        }) {
+                                                            Label("Teilen", systemImage: "square.and.arrow.up")
+                                                        }
+                                                        
+                                                        Divider()
+                                                        
+                                                        Button(role: .destructive, action: {
+                                                            withAnimation {
+                                                                projectManager.deleteProject(project)
+                                                            }
+                                                            AppHaptics.heavy()
+                                                        }) {
+                                                            Label("Löschen", systemImage: "trash")
+                                                        }
+                                                    }
+                                            }
                                         }
                                     }
                                     .padding(.horizontal, 24)
                                 }
                             } else {
-                                // Empty State Placeholder - More premium
                                 VStack(spacing: 12) {
                                     Image(systemName: "photo.on.rectangle.angled")
-                                        .font(.system(size: 40))
+                                        .font(.system(size: 36))
                                         .foregroundStyle(.white.opacity(0.15))
                                     
                                     Text("Deine Reise beginnt hier")
-                                        .font(.system(size: 14, weight: .bold))
+                                        .font(.system(size: 13, weight: .bold, design: .rounded))
                                         .foregroundColor(.white.opacity(0.4))
                                 }
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 160)
+                                .frame(height: 120)
                                 .background(Color.white.opacity(0.05))
                                 .cornerRadius(24)
                                 .overlay(
@@ -179,10 +238,9 @@ struct ContentView: View {
                         }
                         .opacity(isAnimating ? 1 : 0)
                         .offset(y: isAnimating ? 0 : 20)
-                        
                     }
-                    .padding(.bottom, 40)
-                }
+                    .padding(.bottom, 20)
+
             }
             .navigationDestination(isPresented: $isEditorActive) {
                 EditorView(image: selectedImage, project: selectedProject)
@@ -192,9 +250,7 @@ struct ContentView: View {
                 ImagePicker { rawImage in
                     self.selectedProject = nil
                     self.selectedImage = rawImage
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        self.isEditorActive = true
-                    }
+                    self.isEditorActive = true
                 }
             }
             .fullScreenCover(isPresented: $showingSettings) {
@@ -209,9 +265,8 @@ struct ContentView: View {
                 CameraPicker { rawImage in
                     self.selectedProject = nil
                     self.selectedImage = rawImage
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        self.isEditorActive = true
-                    }
+                    // Removed 0.5s delay to make it snappier
+                    self.isEditorActive = true
                 }
             }
             .fullScreenCover(isPresented: .init(get: { !hasSeenOnboarding }, set: { _ in })) {
@@ -252,11 +307,11 @@ struct RecentProjectCard: View {
             
             VStack(alignment: .leading, spacing: 1) {
                 Text(project.date, style: .date)
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                 
                 Text(project.date, style: .time)
-                    .font(.system(size: 8, weight: .medium))
+                    .font(.system(size: 8, weight: .medium, design: .rounded))
                     .foregroundColor(.white.opacity(0.4))
             }
             .padding(.leading, 2)
@@ -268,9 +323,9 @@ struct AdBannerView: View {
     var body: some View {
         VStack {
             Text("ANZEIGE")
-                .font(.system(size: 10, weight: .black))
+                .font(.system(size: 10, weight: .black, design: .rounded))
                 .foregroundColor(.white.opacity(0.3))
-                .kerning(1)
+                .kerning(1.5)
             
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.white.opacity(0.05))
@@ -281,7 +336,7 @@ struct AdBannerView: View {
                             .font(.system(size: 20))
                             .foregroundColor(.white.opacity(0.2))
                         Text("Werbung platzieren")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .foregroundColor(.white.opacity(0.2))
                     }
                 )

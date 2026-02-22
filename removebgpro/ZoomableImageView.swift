@@ -132,7 +132,12 @@ struct ZoomableImageView: View {
     @State private var showHGuide = false
     @State private var activeSnapX: CGFloat? = nil
     @State private var activeSnapY: CGFloat? = nil
-    @State private var guideColor: Color = .yellow // Default to yellow
+    @State private var guideColor: Color = .blue
+    
+    // Track if user explicitly tapped to hide selections
+    @State private var isLayerSelectionHiding: Bool = false
+    
+    // Zoom/Pan State
     @State private var interactingLayer: SelectedLayer? = nil
     
     // Stable scaling for the workspace
@@ -160,7 +165,7 @@ struct ZoomableImageView: View {
                                 .frame(width: bgImage.size.width * bgBaseFitScale, height: bgImage.size.height * bgBaseFitScale)
                                 .overlay(
                                     Rectangle()
-                                        .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background)) ? 3 : 0)
+                                        .stroke(Color.blue, lineWidth: (!isLayerSelectionHiding && (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background))) ? 3 : 0)
                                 )
                                 .scaleEffect(bgScale)
                                 .offset(bgOffset)
@@ -171,7 +176,7 @@ struct ZoomableImageView: View {
                             .frame(width: geometry.size.width * bgScale, height: geometry.size.height * bgScale)
                             .overlay(
                                 Rectangle()
-                                    .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background)) ? 3 : 0)
+                                    .stroke(Color.blue, lineWidth: (!isLayerSelectionHiding && (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background))) ? 3 : 0)
                             )
                             .offset(bgOffset)
                         } else if let color = backgroundColor {
@@ -181,7 +186,7 @@ struct ZoomableImageView: View {
                             .frame(width: geometry.size.width * bgScale, height: geometry.size.height * bgScale)
                             .overlay(
                                 Rectangle()
-                                    .stroke(Color.blue, lineWidth: (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background)) ? 3 : 0)
+                                    .stroke(Color.blue, lineWidth: (!isLayerSelectionHiding && (interactingLayer == .background || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .background))) ? 3 : 0)
                             )
                             .offset(bgOffset)
                         }
@@ -240,7 +245,7 @@ struct ZoomableImageView: View {
                                     .frame(width: stableImageSize.width, height: stableImageSize.height)
                                     .overlay(
                                         Rectangle()
-                                            .stroke(Color.blue, lineWidth: (interactingLayer == .foreground || (interactingLayer == .canvas && activeLayer == .canvas) || (persistentSelection && activeLayer == .foreground)) ? 3 : 0)
+                                            .stroke(Color.blue, lineWidth: (!isLayerSelectionHiding && (interactingLayer == .foreground || (interactingLayer == .canvas && activeLayer == .canvas))) ? 3 : 0)
                                     )
                                     .shadow(
                                         color: shadowColor.opacity(max(shadowOpacity, 0.4)),
@@ -277,6 +282,7 @@ struct ZoomableImageView: View {
                             onDelete: {
                                 onDeleteSticker(sticker.id)
                             },
+                            persistentSelection: persistentSelection,
                             parentTransform: getCurrentPhotoTransform(geometry: geometry),
                             calculateSnap: { translation, size in
                                 // Switch to Blue guides for Stickers
@@ -404,6 +410,7 @@ struct ZoomableImageView: View {
                         onDelete: { onDeleteText(item.id) },
                         onEdit: { onEditText(item) },
                         isEditing: isEditingText,
+                        persistentSelection: persistentSelection,
                         parentTransform: getCurrentPhotoTransform(geometry: geometry),
                         calculateSnap: { translation, size in
                             // Switch to Yellow guides for Text
@@ -565,6 +572,14 @@ struct ZoomableImageView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
+            .onTapGesture {
+                print("DEBUG: Tap on Background/Canvas - Deselecting")
+                withAnimation(AppMotion.snappy) {
+                    selectedStickerId = nil
+                    selectedTextId = nil
+                    isLayerSelectionHiding = true
+                }
+            }
         }
     }
     
@@ -585,6 +600,7 @@ struct ZoomableImageView: View {
                     if interactingLayer == nil {
                         print("DEBUG: Photo Drag Start on \(targetLayer)")
                         interactingLayer = targetLayer
+                        isLayerSelectionHiding = false
                         AppHaptics.light()
                         
                         // Deselect stickers and text when starting to interact with any image layer
@@ -886,6 +902,7 @@ struct StickerView: View {
     let isSelected: Bool
     let onSelect: () -> Void
     let onDelete: () -> Void
+    let persistentSelection: Bool
     let parentTransform: PhotoTransform
     let calculateSnap: (CGSize, CGSize) -> CGSize
     let onDragEnd: () -> Void
@@ -1095,7 +1112,7 @@ struct StickerView: View {
             
             // Handles are overlayed but NOT affected by the move gesture above.
             // They need to track the position/rotation/scale of the sticker visually.
-            if isSelected {
+            if isSelected && !persistentSelection {
                 selectionHandles
                     .scaleEffect(sticker.scale * currentScale)
                     .rotationEffect(sticker.rotation + currentRotation)
@@ -1193,6 +1210,7 @@ struct TextItemOverlayView: View {
     let onDelete: () -> Void
     let onEdit: () -> Void
     let isEditing: Bool
+    let persistentSelection: Bool
     let parentTransform: PhotoTransform
     let calculateSnap: (CGSize, CGSize) -> CGSize
     let onDragEnd: () -> Void
@@ -1341,7 +1359,7 @@ struct TextItemOverlayView: View {
                 )
             )
             
-            if isSelected && !isEditing {
+            if isSelected && !isEditing && !persistentSelection {
                 selectionHandles
                     .scaleEffect(item.scale * currentScale)
                     .rotationEffect(item.rotation + currentRotation)

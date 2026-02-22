@@ -402,13 +402,19 @@ class ImageProcessor {
         
         // 1. Aspect ratio crops are typically handled by applying a specific ratio during the crop mode.
         // If we still have an aspectRatio/customSize here, we crop now.
-        if let ratio = aspectRatio {
-            if let cropped = cropImage(processedImage, to: ratio) {
-                processedImage = cropped
-            }
-        } else if let size = customSize {
-            if let ratio = Optional(size.width / size.height), let cropped = cropImage(processedImage, to: ratio) {
-                processedImage = cropped
+        // BUT: if we are compositing onto a background, we let the composite logic handle the fitting 
+        // to avoid double cropping or stretching.
+        let hasBackground = backgroundColor != nil || gradientColors != nil || backgroundImage != nil
+        
+        if !hasBackground {
+            if let ratio = aspectRatio {
+                if let cropped = cropImage(processedImage, to: ratio) {
+                    processedImage = cropped
+                }
+            } else if let size = customSize {
+                if let ratio = Optional(size.width / size.height), let cropped = cropImage(processedImage, to: ratio) {
+                    processedImage = cropped
+                }
             }
         }
         
@@ -421,7 +427,7 @@ class ImageProcessor {
                                           sharpness: sharpness,
                                           rotation: rotation) ?? processedImage
         
-        if shouldIncludeShadow {
+        if shouldIncludeShadow || outlineWidth > 0 {
             if let background = backgroundImage {
                 processedImage = composite(foreground: finalForeground, background: background, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize, outputSize: virtualSize, outlineWidth: outlineWidth, outlineColor: outlineColor) ?? finalForeground
             } else if let colors = gradientColors {
@@ -434,7 +440,7 @@ class ImageProcessor {
                 }
             } else {
                 // No background - just use the foreground (but still apply transforms if needed, using virtualSize context)
-                if fgScale != 1.0 || fgOffset != .zero || referenceSize != nil {
+                if fgScale != 1.0 || fgOffset != .zero || referenceSize != nil || outlineWidth > 0 {
                     // Create empty background to drive composite logic with specific outputSize
                      if let emptyBg = self.createColorImage(color: .clear, size: virtualSize) {
                         processedImage = composite(foreground: finalForeground, background: emptyBg, shadowRadius: shadowRadius, shadowX: shadowX, shadowY: shadowY, shadowColor: shadowColor, shadowOpacity: shadowOpacity, fgScale: fgScale, fgOffset: fgOffset, bgScale: bgScale, bgOffset: bgOffset, uiCanvasSize: uiCanvasSize, outputSize: virtualSize, outlineWidth: outlineWidth, outlineColor: outlineColor) ?? finalForeground
@@ -446,7 +452,7 @@ class ImageProcessor {
                 }
             }
         } else {
-            // Skip shadow baking (used for stable live preview)
+            // Skip composite logic (unless outline is needed)
             processedImage = finalForeground
         }
         
@@ -468,7 +474,25 @@ class ImageProcessor {
             }
         }
         
+        // 7. Final pass: if a customSize was explicitly requested (like 512x512 for stickers),
+        // we MUST ensure the output image matches that size exactly, potentially resizing.
+        if let targetSize = customSize {
+            if processedImage.size != targetSize {
+                processedImage = resizeImage(processedImage, targetSize: targetSize) ?? processedImage
+            }
+        }
+        
         return processedImage
+    }
+    
+    // Helper to resize image to exact dimensions
+    private func resizeImage(_ image: UIImage, targetSize: CGSize) -> UIImage? {
+        // Force scale to 1.0 to ensure the resulting pixel size is EXACTLY targetSize.width x targetSize.height
+        UIGraphicsBeginImageContextWithOptions(targetSize, false, 1.0)
+        image.draw(in: CGRect(origin: .zero, size: targetSize))
+        let result = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return result
     }
     
     private func renderStickers(_ stickers: [Sticker], onto image: UIImage) -> UIImage? {
@@ -689,23 +713,17 @@ class ImageProcessor {
         context?.translateBy(x: -centerX, y: -centerY)
         
         // Match Foreground to Canvas (if size differ)
-        // If foreground is smaller than canvas (e.g. low res removal), we need to aspect fit it?
-        // Or render it at center?
-        // Usually, foreground should "fill" the canvas concept.
-        // If we just draw(in: CGRect(origin: .zero, size: size)), it stretches!
-        // We want to MAINTAIN ASPECT RATIO of foreground.
-        // Wait, 'size' IS the target canvas size.
-        // If we are composing, we generally expect the foreground to be the "Main Image".
-        // If the Main Image (foreground) is 500x500 and Canvas is 1000x1000 (virtualSize),
-        // we should probably scale foreground up to fit 1000x1000?
-        // Yes, that's the whole point of "High Res Canvas".
-        // But what if aspect ratios differ?
-        // virtualSize is derived FROM referenceSize (Original Image).
-        // foreground is PROCESSED image (derived from Original too).
-        // So they SHOULD have same aspect ratio (unless cropped?).
-        // If cropped, virtualSize logic above handles it.
-        // Match Foreground to Canvas (if size differ)
-        let fgRect = CGRect(origin: .zero, size: size)
+        // We want to MAINTAIN ASPECT RATIO of foreground by Aspect Fitting it into the Canvas (size)
+        let fgWidthRatio = size.width / foreground.size.width
+        let fgHeightRatio = size.height / foreground.size.height
+        let fgBaseFitScale = min(fgWidthRatio, fgHeightRatio)
+        
+        let fgFitWidth = foreground.size.width * fgBaseFitScale
+        let fgFitHeight = foreground.size.height * fgBaseFitScale
+        let fgRect = CGRect(x: (size.width - fgFitWidth) / 2, 
+                            y: (size.height - fgFitHeight) / 2, 
+                            width: fgFitWidth, 
+                            height: fgFitHeight)
         
         let imageToDraw: UIImage
         if outlineWidth > 0 {
@@ -717,6 +735,7 @@ class ImageProcessor {
             imageToDraw = foreground
         }
         
+        // Use the calculated fgRect for Aspect Fit
         imageToDraw.draw(in: fgRect)
         
         context?.restoreGState()
@@ -915,17 +934,20 @@ class ImageProcessor {
     
     func generateStickerImage(from image: UIImage, targetSize: CGFloat = 512, outlineWidth: CGFloat = 0, outlineColor: Color = .white) -> UIImage? {
         // Use the image as is (removed automatic trimTransparency)
-        let trimmedImage = image
+        let sourceImage = image
         
-        // 1. Determine how much space the outline will take
+        // 1. Determine how much space the outline and margin will take
+        // WhatsApp requires at least 16px margin.
+        let margin: CGFloat = 16
         let outlinePadding = outlineWidth > 0 ? (outlineWidth + 4) : 0
+        let totalPadding = max(margin, outlinePadding)
         
-        // 2. Scale the image so that the final sticker (image + outline) fits within targetSize
-        let availableSpace = targetSize - (outlinePadding * 2)
-        let scale = min(availableSpace / trimmedImage.size.width, availableSpace / trimmedImage.size.height)
+        // 2. Scale the image so that the final image + outline + margin fits within targetSize
+        let availableSpace = targetSize - (totalPadding * 2)
+        let scale = min(availableSpace / sourceImage.size.width, availableSpace / sourceImage.size.height)
         
-        let scaledWidth = trimmedImage.size.width * scale
-        let scaledHeight = trimmedImage.size.height * scale
+        let scaledWidth = sourceImage.size.width * scale
+        let scaledHeight = sourceImage.size.height * scale
         
         // 3. Create a clean resized version of the image at the base size
         let format = UIGraphicsImageRendererFormat()
@@ -934,17 +956,30 @@ class ImageProcessor {
         
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: scaledWidth, height: scaledHeight), format: format)
         let scaledImage = renderer.image { _ in
-            trimmedImage.draw(in: CGRect(x: 0, y: 0, width: scaledWidth, height: scaledHeight))
+            sourceImage.draw(in: CGRect(x: 0, y: 0, width: scaledWidth, height: scaledHeight))
         }
         
         // 4. Apply the outline
-        // applyOutline will expand the canvas of 'scaledImage' by exactly 'outlinePadding'
-        // Resulting in a final image of (scaledWidth + 2*outlinePadding) x (scaledHeight + 2*outlinePadding)
+        // applyOutline will expand the canvas of 'scaledImage' by exactly 'outlineWidth' (or close to it)
+        let outlinedImage: UIImage
         if outlineWidth > 0 {
-            return applyOutline(to: scaledImage, width: outlineWidth, color: outlineColor)
+            outlinedImage = applyOutline(to: scaledImage, width: outlineWidth, color: outlineColor) ?? scaledImage
+        } else {
+            outlinedImage = scaledImage
         }
         
-        return scaledImage
+        // 5. CRITICAL: Ensure the final image is exactly targetSize x targetSize (SQUARE)
+        // This is necessary because outlinedImage might be smaller than targetSize if input was not square.
+        let finalRenderer = UIGraphicsImageRenderer(size: CGSize(width: targetSize, height: targetSize), format: format)
+        return finalRenderer.image { _ in
+            let drawRect = CGRect(
+                x: (targetSize - outlinedImage.size.width) / 2,
+                y: (targetSize - outlinedImage.size.height) / 2,
+                width: outlinedImage.size.width,
+                height: outlinedImage.size.height
+            )
+            outlinedImage.draw(in: drawRect)
+        }
     }
     
     // MARK: - Outline Effect
